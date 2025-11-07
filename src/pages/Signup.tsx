@@ -1,41 +1,70 @@
-import { useEffect, useState } from 'react';
-import { useNavigate, useLocation, Link } from 'react-router-dom';
+import { useState } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
 import { supabase } from '@/db/supabase';
-import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Mail, Lock, Eye, EyeOff } from 'lucide-react';
+import { Eye, EyeOff, Mail, Lock, User } from 'lucide-react';
 
-export default function Login() {
+export default function Signup() {
   const navigate = useNavigate();
-  const location = useLocation();
-  const { user } = useAuth();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [formData, setFormData] = useState({
+    fullName: '',
     email: '',
-    password: ''
+    password: '',
+    confirmPassword: ''
   });
 
-  const from = (location.state as { from?: string })?.from || '/dashboard';
+  const validateEmail = (email: string) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  };
 
-  useEffect(() => {
-    if (user) {
-      navigate(from, { replace: true });
-    }
-  }, [user, navigate, from]);
+  const validatePassword = (password: string) => {
+    return password.length >= 8;
+  };
 
-  const handleEmailLogin = async (e: React.FormEvent) => {
+  const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (!formData.email || !formData.password) {
+
+    // Validation
+    if (!formData.fullName.trim()) {
       toast({
         title: 'Validation Error',
-        description: 'Please enter both email and password',
+        description: 'Please enter your full name',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    if (!validateEmail(formData.email)) {
+      toast({
+        title: 'Validation Error',
+        description: 'Please enter a valid email address',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    if (!validatePassword(formData.password)) {
+      toast({
+        title: 'Validation Error',
+        description: 'Password must be at least 8 characters long',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    if (formData.password !== formData.confirmPassword) {
+      toast({
+        title: 'Validation Error',
+        description: 'Passwords do not match',
         variant: 'destructive'
       });
       return;
@@ -44,23 +73,30 @@ export default function Login() {
     setLoading(true);
 
     try {
-      const { error } = await supabase.auth.signInWithPassword({
+      const { data, error } = await supabase.auth.signUp({
         email: formData.email,
         password: formData.password,
+        options: {
+          data: {
+            full_name: formData.fullName,
+          }
+        }
       });
 
       if (error) throw error;
 
-      toast({
-        title: 'Success!',
-        description: 'Logged in successfully',
-      });
-      navigate(from, { replace: true });
+      if (data.user) {
+        toast({
+          title: 'Success!',
+          description: 'Account created successfully. Please check your email to verify your account.',
+        });
+        navigate('/login');
+      }
     } catch (error) {
-      console.error('Login error:', error);
+      console.error('Signup error:', error);
       toast({
-        title: 'Login Failed',
-        description: error instanceof Error ? error.message : 'Invalid email or password',
+        title: 'Signup Failed',
+        description: error instanceof Error ? error.message : 'An error occurred during signup',
         variant: 'destructive'
       });
     } finally {
@@ -68,9 +104,8 @@ export default function Login() {
     }
   };
 
-  const handleGoogleLogin = async () => {
+  const handleGoogleSignup = async () => {
     try {
-      setLoading(true);
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
@@ -78,21 +113,14 @@ export default function Login() {
         }
       });
 
-      if (error) {
-        toast({
-          title: 'Login Failed',
-          description: error.message,
-          variant: 'destructive'
-        });
-      }
+      if (error) throw error;
     } catch (error) {
+      console.error('Google signup error:', error);
       toast({
-        title: 'Login Failed',
-        description: 'An unexpected error occurred',
+        title: 'Google Signup Failed',
+        description: error instanceof Error ? error.message : 'An error occurred',
         variant: 'destructive'
       });
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -100,13 +128,29 @@ export default function Login() {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-secondary to-accent/20 p-4">
       <Card className="w-full max-w-md shadow-xl">
         <CardHeader className="space-y-1 text-center">
-          <CardTitle className="text-3xl font-bold text-primary">ImageLens Pro</CardTitle>
+          <CardTitle className="text-3xl font-bold text-primary">Create Account</CardTitle>
           <CardDescription>
-            Sign in to access intelligent image error detection
+            Sign up to start analyzing your images
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleEmailLogin} className="space-y-4">
+          <form onSubmit={handleSignup} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="fullName">Full Name</Label>
+              <div className="relative">
+                <User className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                <Input
+                  id="fullName"
+                  type="text"
+                  placeholder="John Doe"
+                  value={formData.fullName}
+                  onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
+                  className="pl-10"
+                  required
+                />
+              </div>
+            </div>
+
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
               <div className="relative">
@@ -144,17 +188,36 @@ export default function Login() {
                   {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </button>
               </div>
+              <p className="text-xs text-muted-foreground">
+                Must be at least 8 characters long
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="confirmPassword">Confirm Password</Label>
+              <div className="relative">
+                <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                <Input
+                  id="confirmPassword"
+                  type={showConfirmPassword ? 'text' : 'password'}
+                  placeholder="••••••••"
+                  value={formData.confirmPassword}
+                  onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
+                  className="pl-10 pr-10"
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  className="absolute right-3 top-3 text-muted-foreground hover:text-foreground"
+                >
+                  {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
             </div>
 
             <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Signing in...
-                </>
-              ) : (
-                'Sign In'
-              )}
+              {loading ? 'Creating Account...' : 'Sign Up'}
             </Button>
           </form>
 
@@ -170,9 +233,8 @@ export default function Login() {
           <Button
             type="button"
             variant="outline"
-            onClick={handleGoogleLogin}
-            disabled={loading}
             className="w-full"
+            onClick={handleGoogleSignup}
           >
             <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24">
               <path
@@ -192,14 +254,14 @@ export default function Login() {
                 fill="#EA4335"
               />
             </svg>
-            Sign in with Google
+            Sign up with Google
           </Button>
         </CardContent>
         <CardFooter className="flex justify-center">
           <p className="text-sm text-muted-foreground">
-            Don't have an account?{' '}
-            <Link to="/signup" className="text-primary hover:underline font-medium">
-              Sign up
+            Already have an account?{' '}
+            <Link to="/login" className="text-primary hover:underline font-medium">
+              Sign in
             </Link>
           </p>
         </CardFooter>

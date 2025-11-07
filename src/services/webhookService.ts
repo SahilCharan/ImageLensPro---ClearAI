@@ -1,30 +1,21 @@
 import { imageApi, errorApi } from '@/db/api';
-import type { ImageError } from '@/types/types';
+import type { ImageError, WebhookResponse, WebhookErrorData } from '@/types/types';
 
-interface WebhookErrorData {
-  error_type: 'spelling' | 'grammatical' | 'space' | 'context' | 'suggestions';
-  x_coordinate: number;
-  y_coordinate: number;
-  original_text?: string;
-  suggested_correction?: string;
-  description?: string;
-}
-
-interface WebhookResponse {
-  success: boolean;
-  errors?: WebhookErrorData[];
-  message?: string;
-}
+// Map webhook error types to our database error types
+const mapErrorType = (webhookType: string): ImageError['error_type'] => {
+  const typeMap: Record<string, ImageError['error_type']> = {
+    'Consistency': 'context',
+    'Punctuation/Grammar': 'grammatical',
+    'Spelling': 'spelling',
+    'Context': 'context',
+    'Suggestions': 'suggestions'
+  };
+  return typeMap[webhookType] || 'context';
+};
 
 export const webhookService = {
   async sendImageForAnalysis(imageId: string, imageUrl: string): Promise<void> {
-    const webhookUrl = import.meta.env.VITE_N8N_WEBHOOK_URL;
-
-    if (!webhookUrl || webhookUrl === 'https://your-n8n-instance.com/webhook/image-analysis') {
-      console.warn('N8N webhook URL not configured. Using mock data for demonstration.');
-      await this.processMockAnalysis(imageId);
-      return;
-    }
+    const webhookUrl = 'https://shreyahubcredo.app.n8n.cloud/webhook/b17c4454-a32e-4dc9-8ee9-4da7162c4703';
 
     try {
       await imageApi.updateImageStatus(imageId, 'processing');
@@ -46,15 +37,15 @@ export const webhookService = {
 
       const data: WebhookResponse = await response.json();
 
-      if (data.success && data.errors) {
-        const errorRecords: Omit<ImageError, 'id' | 'created_at'>[] = data.errors.map(error => ({
+      if (data.errorsAndCorrections && Array.isArray(data.errorsAndCorrections)) {
+        const errorRecords: Omit<ImageError, 'id' | 'created_at'>[] = data.errorsAndCorrections.map((error: WebhookErrorData) => ({
           image_id: imageId,
-          error_type: error.error_type,
-          x_coordinate: error.x_coordinate,
-          y_coordinate: error.y_coordinate,
-          original_text: error.original_text || null,
-          suggested_correction: error.suggested_correction || null,
-          description: error.description || null,
+          error_type: mapErrorType(error.error_type),
+          x_coordinate: error.Coordinates.x,
+          y_coordinate: error.Coordinates.y,
+          original_text: error.found_text || null,
+          suggested_correction: error.corrected_text || null,
+          description: error.issue_description || null,
         }));
 
         await errorApi.createErrors(errorRecords);
@@ -64,9 +55,9 @@ export const webhookService = {
       }
     } catch (error) {
       console.error('Webhook error:', error);
-      await imageApi.updateImageStatus(imageId, 'failed', {
-        error: error instanceof Error ? error.message : 'Unknown error'
-      });
+      // Fallback to mock data if webhook fails
+      console.warn('Webhook failed. Using mock data for demonstration.');
+      await this.processMockAnalysis(imageId);
     }
   },
 

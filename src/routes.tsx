@@ -1,4 +1,5 @@
 import Login from './pages/Login';
+import Signup from './pages/Signup';
 import Dashboard from './pages/Dashboard';
 import Upload from './pages/Upload';
 import ImageAnalysis from './pages/ImageAnalysis';
@@ -23,6 +24,12 @@ const routes: RouteConfig[] = [
     name: 'Login',
     path: '/login',
     element: <Login />,
+    visible: false
+  },
+  {
+    name: 'Signup',
+    path: '/signup',
+    element: <Signup />,
     visible: false
   },
   {

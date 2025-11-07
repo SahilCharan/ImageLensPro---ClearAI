@@ -35,3 +35,23 @@ export interface ImageError {
 export interface ImageWithErrors extends Image {
   errors?: ImageError[];
 }
+
+// Webhook data structure from n8n
+export interface WebhookErrorData {
+  error_id: string;
+  found_text: string;
+  error_type: 'Consistency' | 'Punctuation/Grammar' | 'Spelling' | 'Context' | 'Suggestions';
+  issue_description: string;
+  corrected_text: string;
+  Coordinates: {
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+  };
+}
+
+export interface WebhookResponse {
+  errorsAndCorrections: WebhookErrorData[];
+  image?: string; // base64 image string if provided
+}
