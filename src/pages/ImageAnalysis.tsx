@@ -79,31 +79,6 @@ export default function ImageAnalysis() {
     }
   };
 
-  const handleAnalyze = async () => {
-    if (!imageData) return;
-
-    try {
-      const { webhookService } = await import('@/services/webhookService');
-      
-      toast({
-        title: 'Analysis Started',
-        description: 'Your image is being analyzed. This may take a few moments.'
-      });
-
-      await webhookService.sendImageForAnalysis(imageData.id, imageData.original_url);
-
-      setTimeout(() => {
-        loadImageData();
-      }, 3000);
-    } catch (error) {
-      toast({
-        title: 'Error',
-        description: 'Failed to start analysis',
-        variant: 'destructive'
-      });
-    }
-  };
-
   const getErrorPosition = (error: ImageError) => {
     if (!imageDimensions.width || !imageDimensions.height) return { left: 0, top: 0 };
     
@@ -155,10 +130,10 @@ export default function ImageAnalysis() {
                       : 'No errors detected'}
                   </CardDescription>
                 </div>
-                {imageData.status === 'pending' && (
-                  <Button onClick={handleAnalyze}>
+                {(imageData.status === 'pending' || imageData.status === 'processing') && (
+                  <Button onClick={loadImageData}>
                     <RefreshCw className="mr-2 h-4 w-4" />
-                    Analyze
+                    Refresh Status
                   </Button>
                 )}
               </div>

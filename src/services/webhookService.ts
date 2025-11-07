@@ -14,21 +14,26 @@ const mapErrorType = (webhookType: string): ImageError['error_type'] => {
 };
 
 export const webhookService = {
-  async sendImageForAnalysis(imageId: string, imageUrl: string): Promise<void> {
+  /**
+   * Send image file directly to webhook for analysis
+   * @param imageId - Database ID of the image record
+   * @param imageFile - The actual image file to send
+   */
+  async sendImageForAnalysis(imageId: string, imageFile: File): Promise<void> {
     const webhookUrl = 'https://shreyahubcredo.app.n8n.cloud/webhook/b17c4454-a32e-4dc9-8ee9-4da7162c4703';
 
     try {
       await imageApi.updateImageStatus(imageId, 'processing');
 
+      // Create FormData to send the actual image file
+      const formData = new FormData();
+      formData.append('image', imageFile);
+      formData.append('image_id', imageId);
+      formData.append('filename', imageFile.name);
+
       const response = await fetch(webhookUrl, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          image_id: imageId,
-          image_url: imageUrl,
-        }),
+        body: formData, // Send FormData with the actual image file
       });
 
       if (!response.ok) {

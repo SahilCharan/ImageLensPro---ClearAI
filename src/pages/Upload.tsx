@@ -2,6 +2,7 @@ import { useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { imageApi } from '@/db/api';
+import { webhookService } from '@/services/webhookService';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
@@ -85,8 +86,10 @@ export default function Upload() {
     try {
       setUploading(true);
 
+      // Upload image to Supabase Storage for display purposes
       const imageUrl = await imageApi.uploadImage(file, user.id);
 
+      // Create image record in database
       const imageRecord = await imageApi.createImage({
         user_id: user.id,
         original_url: imageUrl,
@@ -95,9 +98,16 @@ export default function Upload() {
 
       toast({
         title: 'Success',
-        description: 'Image uploaded successfully'
+        description: 'Image uploaded successfully. Analyzing...'
       });
 
+      // Send the actual image file to webhook for analysis
+      // This runs in the background
+      webhookService.sendImageForAnalysis(imageRecord.id, file).catch(error => {
+        console.error('Webhook analysis failed:', error);
+      });
+
+      // Navigate to analysis page immediately
       navigate(`/analyze/${imageRecord.id}`);
     } catch (error) {
       toast({
