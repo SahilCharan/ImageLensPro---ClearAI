@@ -1,5 +1,4 @@
 import tailwindAnimate from 'tailwindcss-animate';
-import containerQuery from '@tailwindcss/container-queries';
 
 export default {
   darkMode: ['class'],
@@ -139,7 +138,6 @@ export default {
   },
   plugins: [
     tailwindAnimate,
-    containerQuery,
     function ({ addUtilities }) {
       addUtilities(
         {
