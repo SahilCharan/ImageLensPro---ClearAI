@@ -97,17 +97,19 @@ export default function Upload() {
       });
 
       toast({
-        title: 'Success',
-        description: 'Image uploaded successfully. Analyzing...'
+        title: 'Analyzing Image',
+        description: 'Please wait while we analyze your image...'
       });
 
-      // Send the actual image file to webhook for analysis
-      // This runs in the background
-      webhookService.sendImageForAnalysis(imageRecord.id, file).catch(error => {
-        console.error('Webhook analysis failed:', error);
+      // Send the actual image file to webhook for analysis and WAIT for completion
+      await webhookService.sendImageForAnalysis(imageRecord.id, file);
+
+      toast({
+        title: 'Analysis Complete',
+        description: 'Your image has been analyzed successfully!'
       });
 
-      // Navigate to analysis page immediately
+      // Navigate to analysis page after webhook completes
       navigate(`/analyze/${imageRecord.id}`);
     } catch (error) {
       toast({

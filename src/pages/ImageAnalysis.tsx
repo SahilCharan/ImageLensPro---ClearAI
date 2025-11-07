@@ -1,12 +1,12 @@
 import { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { imageApi, errorApi } from '@/db/api';
+import { imageApi } from '@/db/api';
 import type { ImageWithErrors, ImageError } from '@/types/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Separator } from '@/components/ui/separator';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useToast } from '@/hooks/use-toast';
 import { ArrowLeft, Loader2, AlertCircle, CheckCircle2, RefreshCw } from 'lucide-react';
 
@@ -34,6 +34,7 @@ export default function ImageAnalysis() {
   const [loading, setLoading] = useState(true);
   const [hoveredError, setHoveredError] = useState<string | null>(null);
   const [imageDimensions, setImageDimensions] = useState({ width: 0, height: 0 });
+  const [imageNaturalDimensions, setImageNaturalDimensions] = useState({ width: 0, height: 0 });
   const imageRef = useRef<HTMLImageElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -69,21 +70,32 @@ export default function ImageAnalysis() {
   };
 
   const handleImageLoad = () => {
-    if (imageRef.current && containerRef.current) {
+    if (imageRef.current) {
       const img = imageRef.current;
-      const container = containerRef.current;
+      // Store both displayed and natural dimensions
       setImageDimensions({
         width: img.offsetWidth,
         height: img.offsetHeight
+      });
+      setImageNaturalDimensions({
+        width: img.naturalWidth,
+        height: img.naturalHeight
       });
     }
   };
 
   const getErrorPosition = (error: ImageError) => {
-    if (!imageDimensions.width || !imageDimensions.height) return { left: 0, top: 0 };
+    if (!imageDimensions.width || !imageDimensions.height || !imageNaturalDimensions.width || !imageNaturalDimensions.height) {
+      return { left: 0, top: 0 };
+    }
     
-    const left = (Number(error.x_coordinate) / 100) * imageDimensions.width;
-    const top = (Number(error.y_coordinate) / 100) * imageDimensions.height;
+    // Coordinates from webhook are in actual image pixels
+    // Scale them to the displayed image size
+    const scaleX = imageDimensions.width / imageNaturalDimensions.width;
+    const scaleY = imageDimensions.height / imageNaturalDimensions.height;
+    
+    const left = Number(error.x_coordinate) * scaleX;
+    const top = Number(error.y_coordinate) * scaleY;
     
     return { left, top };
   };
@@ -260,53 +272,51 @@ export default function ImageAnalysis() {
                       <span>No errors found</span>
                     </div>
                   ) : (
-                    <ScrollArea className="h-[500px] pr-4">
-                      <div className="space-y-4">
-                        {Object.entries(groupedErrors || {}).map(([type, errors]) => (
-                          <div key={type}>
-                            <div className="flex items-center gap-2 mb-2">
-                              <div
-                                className="w-3 h-3 rounded-full"
-                                style={{ backgroundColor: ERROR_COLORS[type as keyof typeof ERROR_COLORS] }}
-                              />
-                              <h3 className="font-semibold">
-                                {ERROR_LABELS[type as keyof typeof ERROR_LABELS]} ({errors.length})
-                              </h3>
-                            </div>
-                            <div className="space-y-2 ml-5">
-                              {errors.map((error) => (
-                                <div
-                                  key={error.id}
-                                  className="p-3 bg-muted rounded-lg text-sm cursor-pointer hover:bg-accent transition-colors"
-                                  onMouseEnter={() => setHoveredError(error.id)}
-                                  onMouseLeave={() => setHoveredError(null)}
+                    <ScrollArea className="h-[500px]">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead className="w-16">ID</TableHead>
+                            <TableHead>Type</TableHead>
+                            <TableHead>Original Text</TableHead>
+                            <TableHead>Correction</TableHead>
+                            <TableHead>Location</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {imageData.errors.map((error, index) => (
+                            <TableRow
+                              key={error.id}
+                              className="cursor-pointer hover:bg-accent transition-colors"
+                              onMouseEnter={() => setHoveredError(error.id)}
+                              onMouseLeave={() => setHoveredError(null)}
+                            >
+                              <TableCell className="font-medium">{index + 1}</TableCell>
+                              <TableCell>
+                                <Badge
+                                  variant="outline"
+                                  className="border-2"
+                                  style={{
+                                    borderColor: ERROR_COLORS[error.error_type],
+                                    color: ERROR_COLORS[error.error_type]
+                                  }}
                                 >
-                                  {error.original_text && (
-                                    <p className="mb-1">
-                                      <span className="text-muted-foreground">Original:</span>{' '}
-                                      <span className="font-medium">{error.original_text}</span>
-                                    </p>
-                                  )}
-                                  {error.suggested_correction && (
-                                    <p className="mb-1">
-                                      <span className="text-muted-foreground">Fix:</span>{' '}
-                                      <span className="font-medium text-[hsl(var(--error-suggestions))]">
-                                        {error.suggested_correction}
-                                      </span>
-                                    </p>
-                                  )}
-                                  {error.description && (
-                                    <p className="text-xs text-muted-foreground mt-1">
-                                      {error.description}
-                                    </p>
-                                  )}
-                                </div>
-                              ))}
-                            </div>
-                            <Separator className="mt-4" />
-                          </div>
-                        ))}
-                      </div>
+                                  {ERROR_LABELS[error.error_type]}
+                                </Badge>
+                              </TableCell>
+                              <TableCell className="max-w-xs truncate">
+                                {error.original_text || '-'}
+                              </TableCell>
+                              <TableCell className="max-w-xs truncate text-[hsl(var(--error-suggestions))] font-medium">
+                                {error.suggested_correction || '-'}
+                              </TableCell>
+                              <TableCell className="text-xs text-muted-foreground">
+                                ({Math.round(Number(error.x_coordinate))}, {Math.round(Number(error.y_coordinate))})
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
                     </ScrollArea>
                   )}
                 </>

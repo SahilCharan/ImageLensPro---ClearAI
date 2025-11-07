@@ -1,12 +1,33 @@
 import { imageApi, errorApi } from '@/db/api';
 import type { ImageError, WebhookResponse, WebhookErrorData } from '@/types/types';
 
+// Parse coordinate string format: "x: 295, y: 126, width: 440, height: 10"
+const parseCoordinates = (coordString: string): { x: number; y: number; width?: number; height?: number } => {
+  const parts = coordString.split(',').map(p => p.trim());
+  const coords: Record<string, number> = {};
+  
+  parts.forEach(part => {
+    const [key, value] = part.split(':').map(s => s.trim());
+    coords[key] = parseFloat(value);
+  });
+  
+  return {
+    x: coords.x || 0,
+    y: coords.y || 0,
+    width: coords.width,
+    height: coords.height
+  };
+};
+
 // Map webhook error types to our database error types
 const mapErrorType = (webhookType: string): ImageError['error_type'] => {
   const typeMap: Record<string, ImageError['error_type']> = {
     'Consistency': 'context',
     'Punctuation/Grammar': 'grammatical',
+    'Punctuation': 'grammatical',
+    'Grammar': 'grammatical',
     'Spelling': 'spelling',
+    'Spacing': 'space',
     'Context': 'context',
     'Suggestions': 'suggestions'
   };
@@ -40,18 +61,30 @@ export const webhookService = {
         throw new Error(`Webhook request failed: ${response.statusText}`);
       }
 
-      const data: WebhookResponse = await response.json();
+      const rawData = await response.json();
+      
+      // Handle array wrapper: webhook returns [{ errorsAndCorrections: [...] }]
+      const data: WebhookResponse = Array.isArray(rawData) && rawData.length > 0 
+        ? rawData[0] 
+        : rawData;
 
       if (data.errorsAndCorrections && Array.isArray(data.errorsAndCorrections)) {
-        const errorRecords: Omit<ImageError, 'id' | 'created_at'>[] = data.errorsAndCorrections.map((error: WebhookErrorData) => ({
-          image_id: imageId,
-          error_type: mapErrorType(error.error_type),
-          x_coordinate: error.Coordinates.x,
-          y_coordinate: error.Coordinates.y,
-          original_text: error.found_text || null,
-          suggested_correction: error.corrected_text || null,
-          description: error.issue_description || null,
-        }));
+        const errorRecords: Omit<ImageError, 'id' | 'created_at'>[] = data.errorsAndCorrections.map((error: WebhookErrorData) => {
+          // Parse coordinates from string format "x: 295, y: 126, width: 440, height: 10"
+          const coords = typeof error.Coordinates === 'string' 
+            ? parseCoordinates(error.Coordinates)
+            : error.Coordinates;
+          
+          return {
+            image_id: imageId,
+            error_type: mapErrorType(error.error_type),
+            x_coordinate: coords.x,
+            y_coordinate: coords.y,
+            original_text: error.found_text || null,
+            suggested_correction: error.corrected_text || null,
+            description: error.issue_description || null,
+          };
+        });
 
         await errorApi.createErrors(errorRecords);
         await imageApi.updateImageStatus(imageId, 'completed', data as unknown as Record<string, unknown>);
