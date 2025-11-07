@@ -40,17 +40,25 @@ export interface ImageWithErrors extends Image {
 
 // Webhook data structure from n8n
 export interface WebhookErrorData {
-  error_id: string;
+  error_id: string | number;
   found_text: string;
   error_type: 'Consistency' | 'Punctuation/Grammar' | 'Spelling' | 'Context' | 'Suggestions';
   issue_description: string;
   corrected_text: string;
-  Coordinates: {
+  // Support both uppercase and lowercase field names
+  Coordinates?: string | {
     x: number;
     y: number;
     width: number;
     height: number;
   };
+  coordinates?: string | {
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+  };
+  confidence?: string;
 }
 
 export interface WebhookResponse {

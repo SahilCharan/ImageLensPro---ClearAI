@@ -63,17 +63,30 @@ export const webhookService = {
 
       const rawData = await response.json();
       
+      // Debug logging
+      console.log('Webhook raw response:', JSON.stringify(rawData, null, 2));
+      
       // Handle array wrapper: webhook returns [{ errorsAndCorrections: [...] }]
       const data: WebhookResponse = Array.isArray(rawData) && rawData.length > 0 
         ? rawData[0] 
         : rawData;
 
+      console.log('Processed webhook data:', JSON.stringify(data, null, 2));
+
       if (data.errorsAndCorrections && Array.isArray(data.errorsAndCorrections)) {
         const errorRecords: Omit<ImageError, 'id' | 'created_at'>[] = data.errorsAndCorrections.map((error: WebhookErrorData) => {
+          // Get coordinates from either 'Coordinates' or 'coordinates' field
+          const coordField = error.Coordinates || error.coordinates;
+          
+          console.log('Processing error:', error.error_id, 'coordField:', coordField);
+          
           // Parse coordinates from string format "x: 295, y: 126, width: 440, height: 10"
-          const coords = typeof error.Coordinates === 'string' 
-            ? parseCoordinates(error.Coordinates)
-            : error.Coordinates;
+          // or use object format directly
+          const coords = typeof coordField === 'string' 
+            ? parseCoordinates(coordField)
+            : coordField || { x: 0, y: 0, width: 0, height: 0 };
+          
+          console.log('Parsed coordinates:', coords);
           
           return {
             image_id: imageId,
@@ -87,6 +100,8 @@ export const webhookService = {
             description: error.issue_description || null,
           };
         });
+
+        console.log('Error records to save:', errorRecords);
 
         await errorApi.createErrors(errorRecords);
         await imageApi.updateImageStatus(imageId, 'completed', data as unknown as Record<string, unknown>);

@@ -73,14 +73,24 @@ export default function ImageAnalysis() {
     if (imageRef.current) {
       const img = imageRef.current;
       // Store both displayed and natural dimensions
-      setImageDimensions({
+      const displayed = {
         width: img.offsetWidth,
         height: img.offsetHeight
-      });
-      setImageNaturalDimensions({
+      };
+      const natural = {
         width: img.naturalWidth,
         height: img.naturalHeight
+      };
+      
+      console.log('Image dimensions:', {
+        displayed,
+        natural,
+        scaleX: displayed.width / natural.width,
+        scaleY: displayed.height / natural.height
       });
+      
+      setImageDimensions(displayed);
+      setImageNaturalDimensions(natural);
     }
   };
 
@@ -98,6 +108,13 @@ export default function ImageAnalysis() {
     const top = Number(error.y_coordinate) * scaleY;
     const width = error.width ? Number(error.width) * scaleX : 20; // Default 20px if no width
     const height = error.height ? Number(error.height) * scaleY : 20; // Default 20px if no height
+    
+    console.log('Error position calculation:', {
+      errorId: error.id,
+      original: { x: error.x_coordinate, y: error.y_coordinate, w: error.width, h: error.height },
+      scale: { scaleX, scaleY },
+      result: { left, top, width, height }
+    });
     
     return { left, top, width, height };
   };
