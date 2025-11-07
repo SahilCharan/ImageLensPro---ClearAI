@@ -1,7 +1,11 @@
-import SamplePage from './pages/SamplePage';
+import Login from './pages/Login';
+import Dashboard from './pages/Dashboard';
+import Upload from './pages/Upload';
+import ImageAnalysis from './pages/ImageAnalysis';
+import Admin from './pages/Admin';
 import type { ReactNode } from 'react';
 
-interface RouteConfig {
+export interface RouteConfig {
   name: string;
   path: string;
   element: ReactNode;
@@ -10,9 +14,40 @@ interface RouteConfig {
 
 const routes: RouteConfig[] = [
   {
-    name: 'Sample Page',
+    name: 'Dashboard',
     path: '/',
-    element: <SamplePage />
+    element: <Dashboard />,
+    visible: false
+  },
+  {
+    name: 'Login',
+    path: '/login',
+    element: <Login />,
+    visible: false
+  },
+  {
+    name: 'Dashboard',
+    path: '/dashboard',
+    element: <Dashboard />,
+    visible: false
+  },
+  {
+    name: 'Upload',
+    path: '/upload',
+    element: <Upload />,
+    visible: false
+  },
+  {
+    name: 'Image Analysis',
+    path: '/analyze/:imageId',
+    element: <ImageAnalysis />,
+    visible: false
+  },
+  {
+    name: 'Admin',
+    path: '/admin',
+    element: <Admin />,
+    visible: false
   }
 ];
 
