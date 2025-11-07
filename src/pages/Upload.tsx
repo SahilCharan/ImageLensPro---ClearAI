@@ -113,12 +113,11 @@ export default function Upload() {
   return (
     <div className="container mx-auto py-8 px-4 max-w-4xl">
       <div className="mb-8">
-        <h1 className="text-4xl font-bold text-foreground">Upload Image</h1>
+        <h1 className="font-bold text-foreground bg-[#ff0000ff] bg-none text-[40px]">Upload Image</h1>
         <p className="text-muted-foreground mt-2">
           Upload an image to detect and analyze errors
         </p>
       </div>
-
       <Card>
         <CardHeader>
           <CardTitle>Select Image</CardTitle>
