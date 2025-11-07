@@ -80,6 +80,8 @@ export const webhookService = {
             error_type: mapErrorType(error.error_type),
             x_coordinate: coords.x,
             y_coordinate: coords.y,
+            width: coords.width || null,
+            height: coords.height || null,
             original_text: error.found_text || null,
             suggested_correction: error.corrected_text || null,
             description: error.issue_description || null,
@@ -108,6 +110,8 @@ export const webhookService = {
         error_type: 'spelling',
         x_coordinate: 25,
         y_coordinate: 30,
+        width: 80,
+        height: 20,
         original_text: 'recieve',
         suggested_correction: 'receive',
         description: 'Common spelling mistake: "i before e except after c"'
@@ -117,6 +121,8 @@ export const webhookService = {
         error_type: 'grammatical',
         x_coordinate: 45,
         y_coordinate: 50,
+        width: 120,
+        height: 20,
         original_text: 'They was going',
         suggested_correction: 'They were going',
         description: 'Subject-verb agreement error'
@@ -126,6 +132,8 @@ export const webhookService = {
         error_type: 'space',
         x_coordinate: 65,
         y_coordinate: 40,
+        width: 60,
+        height: 20,
         original_text: 'alot',
         suggested_correction: 'a lot',
         description: 'Missing space between words'
@@ -135,6 +143,8 @@ export const webhookService = {
         error_type: 'context',
         x_coordinate: 35,
         y_coordinate: 70,
+        width: 70,
+        height: 20,
         original_text: 'their',
         suggested_correction: 'there',
         description: 'Incorrect word usage in context'
@@ -144,6 +154,8 @@ export const webhookService = {
         error_type: 'suggestions',
         x_coordinate: 55,
         y_coordinate: 60,
+        width: 90,
+        height: 20,
         original_text: 'good',
         suggested_correction: 'excellent',
         description: 'Consider using a stronger word for emphasis'

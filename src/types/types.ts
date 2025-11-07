@@ -26,6 +26,8 @@ export interface ImageError {
   error_type: 'spelling' | 'grammatical' | 'space' | 'context' | 'suggestions';
   x_coordinate: number;
   y_coordinate: number;
+  width: number | null;
+  height: number | null;
   original_text: string | null;
   suggested_correction: string | null;
   description: string | null;

@@ -86,7 +86,7 @@ export default function ImageAnalysis() {
 
   const getErrorPosition = (error: ImageError) => {
     if (!imageDimensions.width || !imageDimensions.height || !imageNaturalDimensions.width || !imageNaturalDimensions.height) {
-      return { left: 0, top: 0 };
+      return { left: 0, top: 0, width: 0, height: 0 };
     }
     
     // Coordinates from webhook are in actual image pixels
@@ -96,8 +96,10 @@ export default function ImageAnalysis() {
     
     const left = Number(error.x_coordinate) * scaleX;
     const top = Number(error.y_coordinate) * scaleY;
+    const width = error.width ? Number(error.width) * scaleX : 20; // Default 20px if no width
+    const height = error.height ? Number(error.height) * scaleY : 20; // Default 20px if no height
     
-    return { left, top };
+    return { left, top, width, height };
   };
 
   const groupedErrors = imageData?.errors?.reduce((acc, error) => {
@@ -171,20 +173,24 @@ export default function ImageAnalysis() {
                   return (
                     <div
                       key={error.id}
-                      className="absolute cursor-pointer transition-transform"
+                      className="absolute cursor-pointer transition-all"
                       style={{
                         left: `${position.left}px`,
                         top: `${position.top}px`,
-                        transform: isHovered ? 'scale(1.5)' : 'scale(1)',
+                        width: `${position.width}px`,
+                        height: `${position.height}px`,
                         zIndex: isHovered ? 10 : 1
                       }}
                       onMouseEnter={() => setHoveredError(error.id)}
                       onMouseLeave={() => setHoveredError(null)}
                     >
                       <div
-                        className="w-4 h-4 rounded-full border-2 border-white shadow-lg"
+                        className="w-full h-full border-2 rounded"
                         style={{
-                          backgroundColor: ERROR_COLORS[error.error_type],
+                          borderColor: ERROR_COLORS[error.error_type],
+                          backgroundColor: isHovered 
+                            ? `${ERROR_COLORS[error.error_type]}40` 
+                            : `${ERROR_COLORS[error.error_type]}20`,
                           boxShadow: isHovered 
                             ? `0 0 20px ${ERROR_COLORS[error.error_type]}` 
                             : `0 2px 4px rgba(0,0,0,0.2)`
@@ -193,8 +199,11 @@ export default function ImageAnalysis() {
                       
                       {isHovered && (
                         <div
-                          className="absolute left-6 top-0 bg-popover text-popover-foreground p-3 rounded-lg shadow-xl border border-border min-w-64 z-20"
-                          style={{ pointerEvents: 'none' }}
+                          className="absolute left-0 bg-popover text-popover-foreground p-3 rounded-lg shadow-xl border border-border min-w-64 z-20"
+                          style={{ 
+                            pointerEvents: 'none',
+                            top: `${position.height + 8}px`
+                          }}
                         >
                           <div className="flex items-center gap-2 mb-2">
                             <div
@@ -310,8 +319,11 @@ export default function ImageAnalysis() {
                               <TableCell className="max-w-xs truncate text-[hsl(var(--error-suggestions))] font-medium">
                                 {error.suggested_correction || '-'}
                               </TableCell>
-                              <TableCell className="text-xs text-muted-foreground">
-                                ({Math.round(Number(error.x_coordinate))}, {Math.round(Number(error.y_coordinate))})
+                              <TableCell className="text-xs text-muted-foreground font-mono">
+                                x:{Math.round(Number(error.x_coordinate))}, y:{Math.round(Number(error.y_coordinate))}
+                                {error.width && error.height && (
+                                  <><br/>w:{Math.round(Number(error.width))}, h:{Math.round(Number(error.height))}</>
+                                )}
                               </TableCell>
                             </TableRow>
                           ))}
