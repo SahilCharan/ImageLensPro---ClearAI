@@ -72,25 +72,28 @@ export default function ImageAnalysis() {
   const handleImageLoad = () => {
     if (imageRef.current) {
       const img = imageRef.current;
-      // Store both displayed and natural dimensions
+      // Store displayed dimensions
       const displayed = {
         width: img.offsetWidth,
         height: img.offsetHeight
       };
-      const natural = {
-        width: img.naturalWidth,
-        height: img.naturalHeight
+      
+      // Use Gemini-provided dimensions if available, otherwise use natural dimensions
+      const original = {
+        width: imageData?.original_width || img.naturalWidth,
+        height: imageData?.original_height || img.naturalHeight
       };
       
       console.log('Image dimensions:', {
         displayed,
-        natural,
-        scaleX: displayed.width / natural.width,
-        scaleY: displayed.height / natural.height
+        original,
+        geminiProvided: !!(imageData?.original_width && imageData?.original_height),
+        scaleX: displayed.width / original.width,
+        scaleY: displayed.height / original.height
       });
       
       setImageDimensions(displayed);
-      setImageNaturalDimensions(natural);
+      setImageNaturalDimensions(original);
     }
   };
 

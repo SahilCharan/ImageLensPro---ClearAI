@@ -16,6 +16,8 @@ export interface Image {
   filename: string;
   status: 'pending' | 'processing' | 'completed' | 'failed';
   webhook_response: Record<string, unknown> | null;
+  original_width: number | null;
+  original_height: number | null;
   created_at: string;
   updated_at: string;
 }
@@ -42,7 +44,7 @@ export interface ImageWithErrors extends Image {
 export interface WebhookErrorData {
   error_id: string | number;
   found_text: string;
-  error_type: 'Consistency' | 'Punctuation/Grammar' | 'Spelling' | 'Context' | 'Suggestions';
+  error_type: 'Consistency' | 'Punctuation/Grammar' | 'Spelling' | 'Context' | 'Suggestions' | 'Spacing';
   issue_description: string;
   corrected_text: string;
   // Support both uppercase and lowercase field names
@@ -62,6 +64,31 @@ export interface WebhookErrorData {
 }
 
 export interface WebhookResponse {
-  errorsAndCorrections: WebhookErrorData[];
+  errorsAndCorrections?: WebhookErrorData[];
+  errors_and_corrections?: WebhookErrorData[]; // Support snake_case from Gemini
+  image_dimensions?: {
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+  };
   image?: string; // base64 image string if provided
+}
+
+// Gemini API response structure
+export interface GeminiResponse {
+  content?: {
+    parts?: Array<{
+      text?: string;
+    }>;
+  };
+  // Direct response format
+  scale_using_to_giving_cordinates?: string;
+  image_dimensions?: {
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+  };
+  errors_and_corrections?: WebhookErrorData[];
 }

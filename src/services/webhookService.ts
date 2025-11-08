@@ -66,15 +66,43 @@ export const webhookService = {
       // Debug logging
       console.log('Webhook raw response:', JSON.stringify(rawData, null, 2));
       
-      // Handle array wrapper: webhook returns [{ errorsAndCorrections: [...] }]
-      const data: WebhookResponse = Array.isArray(rawData) && rawData.length > 0 
-        ? rawData[0] 
-        : rawData;
+      // Parse Gemini response structure if needed
+      let parsedData: WebhookResponse;
+      
+      // Handle Gemini API response wrapped in content.parts[0].text
+      if (Array.isArray(rawData) && rawData[0]?.content?.parts?.[0]?.text) {
+        console.log('Detected Gemini API response structure');
+        const jsonText = rawData[0].content.parts[0].text;
+        // Extract JSON from markdown code blocks if present
+        const jsonMatch = jsonText.match(/```json\n([\s\S]*?)\n```/) || jsonText.match(/```\n([\s\S]*?)\n```/);
+        const cleanJson = jsonMatch ? jsonMatch[1] : jsonText;
+        parsedData = JSON.parse(cleanJson);
+      }
+      // Handle array wrapper: [{ errorsAndCorrections: [...] }]
+      else if (Array.isArray(rawData) && rawData.length > 0) {
+        parsedData = rawData[0];
+      }
+      // Direct object response
+      else {
+        parsedData = rawData;
+      }
 
-      console.log('Processed webhook data:', JSON.stringify(data, null, 2));
+      console.log('Parsed webhook data:', JSON.stringify(parsedData, null, 2));
 
-      if (data.errorsAndCorrections && Array.isArray(data.errorsAndCorrections)) {
-        const errorRecords: Omit<ImageError, 'id' | 'created_at'>[] = data.errorsAndCorrections.map((error: WebhookErrorData) => {
+      // Extract errors from either camelCase or snake_case field
+      const errors = parsedData.errorsAndCorrections || parsedData.errors_and_corrections;
+      
+      // Extract image dimensions if provided
+      const imageDimensions = parsedData.image_dimensions;
+      
+      if (imageDimensions) {
+        console.log('Original image dimensions from Gemini:', imageDimensions);
+        // Update image record with original dimensions
+        await imageApi.updateImageDimensions(imageId, imageDimensions.width, imageDimensions.height);
+      }
+
+      if (errors && Array.isArray(errors)) {
+        const errorRecords: Omit<ImageError, 'id' | 'created_at'>[] = errors.map((error: WebhookErrorData) => {
           // Get coordinates from either 'Coordinates' or 'coordinates' field
           const coordField = error.Coordinates || error.coordinates;
           
@@ -104,9 +132,9 @@ export const webhookService = {
         console.log('Error records to save:', errorRecords);
 
         await errorApi.createErrors(errorRecords);
-        await imageApi.updateImageStatus(imageId, 'completed', data as unknown as Record<string, unknown>);
+        await imageApi.updateImageStatus(imageId, 'completed', parsedData as unknown as Record<string, unknown>);
       } else {
-        await imageApi.updateImageStatus(imageId, 'failed', data as unknown as Record<string, unknown>);
+        await imageApi.updateImageStatus(imageId, 'failed', parsedData as unknown as Record<string, unknown>);
       }
     } catch (error) {
       console.error('Webhook error:', error);

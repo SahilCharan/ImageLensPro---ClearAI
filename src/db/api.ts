@@ -137,6 +137,26 @@ export const imageApi = {
     return data;
   },
 
+  async updateImageDimensions(
+    imageId: string,
+    width: number,
+    height: number
+  ): Promise<Image> {
+    const { data, error } = await supabase
+      .from('images')
+      .update({
+        original_width: width,
+        original_height: height
+      })
+      .eq('id', imageId)
+      .select()
+      .maybeSingle();
+
+    if (error) throw error;
+    if (!data) throw new Error('Image not found');
+    return data;
+  },
+
   async deleteImage(imageId: string): Promise<void> {
     const { error } = await supabase
       .from('images')
