@@ -9,6 +9,30 @@ export interface Profile {
   created_at: string;
 }
 
+export interface UserSession {
+  id: string;
+  user_id: string;
+  device_info: string | null;
+  ip_address: string | null;
+  user_agent: string | null;
+  last_activity: string;
+  created_at: string;
+  expires_at: string;
+}
+
+export interface ActiveSessionsCount {
+  total_active_users: number;
+  total_active_sessions: number;
+}
+
+export interface UserSessionDetail {
+  user_id: string;
+  user_email: string;
+  user_name: string | null;
+  active_sessions: number;
+  last_activity: string;
+}
+
 export interface Image {
   id: string;
   user_id: string;

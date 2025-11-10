@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
-import { profileApi } from '@/db/api';
-import type { Profile } from '@/types/types';
+import { profileApi, sessionApi } from '@/db/api';
+import type { Profile, ActiveSessionsCount, UserSessionDetail } from '@/types/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
@@ -22,7 +22,7 @@ import {
 } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-import { Shield, Users, Loader2 } from 'lucide-react';
+import { Shield, Users, Loader2, Activity, Monitor, RefreshCw } from 'lucide-react';
 import { format } from 'date-fns';
 
 export default function Admin() {
@@ -32,6 +32,12 @@ export default function Admin() {
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState<string | null>(null);
+  const [sessionsCount, setSessionsCount] = useState<ActiveSessionsCount>({
+    total_active_users: 0,
+    total_active_sessions: 0
+  });
+  const [userSessions, setUserSessions] = useState<UserSessionDetail[]>([]);
+  const [loadingSessions, setLoadingSessions] = useState(false);
 
   useEffect(() => {
     if (profile?.role !== 'admin') {
@@ -44,6 +50,7 @@ export default function Admin() {
       return;
     }
     loadProfiles();
+    loadSessionData();
   }, [profile]);
 
   const loadProfiles = async () => {
@@ -59,6 +66,27 @@ export default function Admin() {
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadSessionData = async () => {
+    try {
+      setLoadingSessions(true);
+      const [count, sessions] = await Promise.all([
+        sessionApi.getActiveSessionsCount(),
+        sessionApi.getUserSessionsAdmin()
+      ]);
+      setSessionsCount(count);
+      setUserSessions(sessions);
+    } catch (error) {
+      console.error('Error loading session data:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to load session data',
+        variant: 'destructive'
+      });
+    } finally {
+      setLoadingSessions(false);
     }
   };
 
@@ -84,6 +112,14 @@ export default function Admin() {
     }
   };
 
+  const handleRefreshSessions = () => {
+    loadSessionData();
+    toast({
+      title: 'Refreshed',
+      description: 'Session data has been updated'
+    });
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -100,11 +136,11 @@ export default function Admin() {
           <h1 className="text-4xl font-bold text-foreground">Admin Dashboard</h1>
         </div>
         <p className="text-muted-foreground">
-          Manage users and their permissions
+          Manage users, permissions, and monitor active sessions
         </p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-6 mb-8">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Users</CardTitle>
@@ -138,7 +174,112 @@ export default function Admin() {
             </div>
           </CardContent>
         </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Active Users</CardTitle>
+            <Activity className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-green-600">
+              {sessionsCount.total_active_users}
+            </div>
+            <p className="text-xs text-muted-foreground mt-1">
+              Currently online
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Active Sessions</CardTitle>
+            <Monitor className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-blue-600">
+              {sessionsCount.total_active_sessions}
+            </div>
+            <p className="text-xs text-muted-foreground mt-1">
+              Total devices
+            </p>
+          </CardContent>
+        </Card>
       </div>
+
+      <Card className="mb-8">
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle>Active User Sessions</CardTitle>
+              <CardDescription>
+                Real-time view of logged-in users and their devices
+              </CardDescription>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleRefreshSessions}
+              disabled={loadingSessions}
+            >
+              {loadingSessions ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <RefreshCw className="h-4 w-4" />
+              )}
+              <span className="ml-2">Refresh</span>
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {userSessions.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">
+              No active sessions at the moment
+            </div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>User</TableHead>
+                  <TableHead>Email</TableHead>
+                  <TableHead>Active Devices</TableHead>
+                  <TableHead>Last Activity</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {userSessions.map((session) => (
+                  <TableRow key={session.user_id}>
+                    <TableCell>
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+                          <span className="text-sm font-medium text-primary">
+                            {(session.user_name || session.user_email || 'U')[0].toUpperCase()}
+                          </span>
+                        </div>
+                        <span className="font-medium">
+                          {session.user_name || 'Unknown User'}
+                        </span>
+                      </div>
+                    </TableCell>
+                    <TableCell>{session.user_email}</TableCell>
+                    <TableCell>
+                      <Badge variant="outline" className="gap-1">
+                        <Monitor className="h-3 w-3" />
+                        {session.active_sessions} {session.active_sessions === 1 ? 'device' : 'devices'}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+                        {format(new Date(session.last_activity), 'MMM d, yyyy HH:mm')}
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader>

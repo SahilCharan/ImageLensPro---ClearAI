@@ -189,3 +189,76 @@ export const errorApi = {
     return Array.isArray(data) ? data : [];
   }
 };
+
+export const sessionApi = {
+  async createSession(userId: string): Promise<string> {
+    const deviceInfo = navigator.userAgent;
+    const userAgent = navigator.userAgent;
+    
+    const { data, error } = await supabase
+      .from('user_sessions')
+      .insert({
+        user_id: userId,
+        device_info: deviceInfo,
+        user_agent: userAgent,
+        last_activity: new Date().toISOString(),
+      })
+      .select()
+      .maybeSingle();
+
+    if (error) throw error;
+    if (!data) throw new Error('Failed to create session');
+    
+    // Store session ID in localStorage
+    localStorage.setItem('session_id', data.id);
+    return data.id;
+  },
+
+  async updateSessionActivity(sessionId: string): Promise<void> {
+    const { error } = await supabase.rpc('update_session_activity', {
+      session_id: sessionId
+    });
+
+    if (error) throw error;
+  },
+
+  async deleteSession(sessionId: string): Promise<void> {
+    const { error } = await supabase
+      .from('user_sessions')
+      .delete()
+      .eq('id', sessionId);
+
+    if (error) throw error;
+    localStorage.removeItem('session_id');
+  },
+
+  async deleteAllUserSessions(userId: string): Promise<void> {
+    const { error } = await supabase
+      .from('user_sessions')
+      .delete()
+      .eq('user_id', userId);
+
+    if (error) throw error;
+    localStorage.removeItem('session_id');
+  },
+
+  async getActiveSessionsCount() {
+    const { data, error } = await supabase.rpc('get_active_sessions_count');
+
+    if (error) throw error;
+    return data && data.length > 0 ? data[0] : { total_active_users: 0, total_active_sessions: 0 };
+  },
+
+  async getUserSessionsAdmin() {
+    const { data, error } = await supabase.rpc('get_user_sessions_admin');
+
+    if (error) throw error;
+    return Array.isArray(data) ? data : [];
+  },
+
+  async cleanupExpiredSessions(): Promise<void> {
+    const { error } = await supabase.rpc('cleanup_expired_sessions');
+
+    if (error) throw error;
+  }
+};
