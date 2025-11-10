@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { Upload as UploadIcon, X, Loader2, Image as ImageIcon } from 'lucide-react';
+import WebhookStatus from '@/components/common/WebhookStatus';
 
 export default function Upload() {
   const { user } = useAuth();
@@ -130,6 +131,12 @@ export default function Upload() {
           Upload an image to detect and analyze errors
         </p>
       </div>
+      
+      {/* Webhook Status Indicator */}
+      <div className="mb-6">
+        <WebhookStatus />
+      </div>
+      
       <Card>
         <CardHeader>
           <CardTitle>Select Image</CardTitle>
@@ -137,8 +144,7 @@ export default function Upload() {
             Drag and drop or click to select an image (JPG, PNG, GIF - Max 5MB)
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
-          {!preview ? (
+        <CardContent className="space-y-4">{!preview ? (
             <div
               onDragEnter={handleDrag}
               onDragLeave={handleDrag}

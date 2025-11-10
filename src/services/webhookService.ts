@@ -42,7 +42,18 @@ export const webhookService = {
    * @param imageFile - The actual image file to send
    */
   async sendImageForAnalysis(imageId: string, imageFile: File): Promise<void> {
-    const webhookUrl = 'https://shreyahubcredo.app.n8n.cloud/webhook/b17c4454-a32e-4dc9-8ee9-4da7162c4703';
+    // Get webhook URL from environment variable
+    const webhookUrl = import.meta.env.VITE_N8N_WEBHOOK_URL || 
+                      'https://shreyahubcredo.app.n8n.cloud/webhook/b17c4454-a32e-4dc9-8ee9-4da7162c4703';
+
+    console.log('Using webhook URL:', webhookUrl);
+
+    // Check if webhook URL is configured
+    if (!webhookUrl || webhookUrl === 'https://your-n8n-instance.com/webhook/image-analysis') {
+      console.warn('Webhook URL not configured. Using mock data.');
+      await this.processMockAnalysis(imageId);
+      return;
+    }
 
     try {
       await imageApi.updateImageStatus(imageId, 'processing');
@@ -53,13 +64,23 @@ export const webhookService = {
       formData.append('image_id', imageId);
       formData.append('filename', imageFile.name);
 
+      console.log('Sending image to webhook:', {
+        url: webhookUrl,
+        imageId,
+        filename: imageFile.name,
+        size: imageFile.size,
+        type: imageFile.type
+      });
+
       const response = await fetch(webhookUrl, {
         method: 'POST',
         body: formData, // Send FormData with the actual image file
       });
 
+      console.log('Webhook response status:', response.status, response.statusText);
+
       if (!response.ok) {
-        throw new Error(`Webhook request failed: ${response.statusText}`);
+        throw new Error(`Webhook request failed: ${response.status} ${response.statusText}`);
       }
 
       const rawData = await response.json();
@@ -161,11 +182,19 @@ export const webhookService = {
 
         await errorApi.createErrors(errorRecords);
         await imageApi.updateImageStatus(imageId, 'completed', parsedData as unknown as Record<string, unknown>);
+        
+        console.log('Analysis completed successfully. Errors saved:', errorRecords.length);
       } else {
-        await imageApi.updateImageStatus(imageId, 'failed', parsedData as unknown as Record<string, unknown>);
+        console.warn('No errors found in webhook response');
+        await imageApi.updateImageStatus(imageId, 'completed', parsedData as unknown as Record<string, unknown>);
       }
     } catch (error) {
       console.error('Webhook error:', error);
+      console.error('Error details:', {
+        message: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : undefined
+      });
+      
       // Fallback to mock data if webhook fails
       console.warn('Webhook failed. Using mock data for demonstration.');
       await this.processMockAnalysis(imageId);
