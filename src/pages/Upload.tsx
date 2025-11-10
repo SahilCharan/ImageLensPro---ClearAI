@@ -7,7 +7,6 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { Upload as UploadIcon, X, Loader2, Image as ImageIcon } from 'lucide-react';
-import WebhookStatus from '@/components/common/WebhookStatus';
 
 export default function Upload() {
   const { user } = useAuth();
@@ -130,11 +129,6 @@ export default function Upload() {
         <p className="text-muted-foreground mt-2">
           Upload an image to detect and analyze errors
         </p>
-      </div>
-      
-      {/* Webhook Status Indicator */}
-      <div className="mb-6">
-        <WebhookStatus />
       </div>
       
       <Card>
