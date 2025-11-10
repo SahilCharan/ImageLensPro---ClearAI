@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
+import { createContext, useContext, useEffect, useState, useCallback, type ReactNode } from 'react';
 import { supabase } from '@/db/supabase';
 import type { User } from '@supabase/supabase-js';
 import type { Profile } from '@/types/types';
@@ -20,16 +20,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [sessionId, setSessionId] = useState<string | null>(null);
 
-  const refreshProfile = async () => {
+  const refreshProfile = useCallback(async () => {
     try {
       const profileData = await profileApi.getCurrentProfile();
       setProfile(profileData);
     } catch (error) {
       console.error('Error fetching profile:', error);
     }
-  };
+  }, []);
 
-  const createUserSession = async (userId: string) => {
+  const createUserSession = useCallback(async (userId: string) => {
     try {
       const newSessionId = await sessionApi.createSession(userId);
       setSessionId(newSessionId);
@@ -37,9 +37,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } catch (error) {
       console.error('Error creating session:', error);
     }
-  };
+  }, []);
 
-  const updateActivity = async () => {
+  const updateActivity = useCallback(async () => {
     const storedSessionId = localStorage.getItem('session_id');
     if (storedSessionId) {
       try {
@@ -48,7 +48,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         console.error('Error updating session activity:', error);
       }
     }
-  };
+  }, []);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -76,7 +76,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
 
     return () => subscription.unsubscribe();
-  }, []);
+  }, [refreshProfile, createUserSession]);
 
   // Update session activity every 5 minutes
   useEffect(() => {
@@ -87,7 +87,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }, 5 * 60 * 1000); // 5 minutes
 
     return () => clearInterval(interval);
-  }, [user]);
+  }, [user, updateActivity]);
 
   // Update activity on user interaction
   useEffect(() => {
@@ -106,9 +106,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       window.removeEventListener('keypress', handleActivity);
       window.removeEventListener('scroll', handleActivity);
     };
-  }, [user]);
+  }, [user, updateActivity]);
 
-  const signOut = async () => {
+  const signOut = useCallback(async () => {
     const storedSessionId = localStorage.getItem('session_id');
     if (storedSessionId) {
       try {
@@ -122,7 +122,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null);
     setProfile(null);
     setSessionId(null);
-  };
+  }, []);
 
   return (
     <AuthContext.Provider value={{ user, profile, loading, signOut, refreshProfile }}>
