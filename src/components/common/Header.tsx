@@ -7,7 +7,7 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { LogOut, Shield, LayoutDashboard, Upload as UploadIcon, Home } from 'lucide-react';
+import { LogOut, Shield, LayoutDashboard, Upload as UploadIcon, Home, User } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 
 export default function Header() {
@@ -33,7 +33,7 @@ export default function Header() {
           <span className="text-xl font-bold text-foreground">ImageLens Pro</span>
         </Link>
 
-        <nav className="flex items-center gap-6">
+        <nav className="flex items-center gap-4">
           {user ? (
             <>
               <Link to="/dashboard">
@@ -43,28 +43,55 @@ export default function Header() {
                 <Button variant="ghost">Upload</Button>
               </Link>
               
+              {/* User Profile Dropdown */}
               <Popover>
                 <PopoverTrigger asChild>
-                  <Button variant="ghost" className="relative h-10 w-10 rounded-full">
-                    <Avatar>
+                  <Button 
+                    variant="outline" 
+                    className="relative h-10 gap-2 px-3 rounded-full border-2 hover:border-primary transition-colors"
+                  >
+                    <Avatar className="h-7 w-7">
                       <AvatarImage src={profile?.avatar_url || undefined} alt={profile?.full_name || 'User'} />
-                      <AvatarFallback>
+                      <AvatarFallback className="bg-primary text-primary-foreground text-sm">
                         {(profile?.full_name || profile?.email || 'U')[0].toUpperCase()}
                       </AvatarFallback>
                     </Avatar>
+                    <span className="text-sm font-medium max-w-[100px] truncate">
+                      {profile?.full_name || profile?.email?.split('@')[0] || 'User'}
+                    </span>
                   </Button>
                 </PopoverTrigger>
-                <PopoverContent align="end" className="w-56 p-0">
+                <PopoverContent align="end" className="w-64 p-0">
                   <div className="flex flex-col">
-                    <div className="px-4 py-3">
-                      <p className="text-sm font-medium leading-none">
-                        {profile?.full_name || 'User'}
-                      </p>
-                      <p className="text-xs leading-none text-muted-foreground mt-1">
-                        {profile?.email}
-                      </p>
+                    {/* User Info Section */}
+                    <div className="px-4 py-3 bg-muted/50">
+                      <div className="flex items-center gap-3">
+                        <Avatar className="h-10 w-10">
+                          <AvatarImage src={profile?.avatar_url || undefined} alt={profile?.full_name || 'User'} />
+                          <AvatarFallback className="bg-primary text-primary-foreground">
+                            {(profile?.full_name || profile?.email || 'U')[0].toUpperCase()}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium leading-none truncate">
+                            {profile?.full_name || 'User'}
+                          </p>
+                          <p className="text-xs leading-none text-muted-foreground mt-1 truncate">
+                            {profile?.email}
+                          </p>
+                          {profile?.role === 'admin' && (
+                            <span className="inline-flex items-center gap-1 mt-1 px-2 py-0.5 rounded-full text-xs font-medium bg-primary/10 text-primary">
+                              <Shield className="h-3 w-3" />
+                              Admin
+                            </span>
+                          )}
+                        </div>
+                      </div>
                     </div>
+                    
                     <Separator />
+                    
+                    {/* Navigation Links */}
                     <div className="p-1">
                       <Button
                         variant="ghost"
@@ -88,7 +115,7 @@ export default function Header() {
                         onClick={() => handleNavigation('/upload')}
                       >
                         <UploadIcon className="mr-2 h-4 w-4" />
-                        Upload
+                        Upload Image
                       </Button>
                       {profile?.role === 'admin' && (
                         <Button
@@ -101,11 +128,14 @@ export default function Header() {
                         </Button>
                       )}
                     </div>
+                    
                     <Separator />
-                    <div className="p-1">
+                    
+                    {/* Sign Out Button - Prominent */}
+                    <div className="p-2">
                       <Button
-                        variant="ghost"
-                        className="w-full justify-start text-destructive hover:text-destructive"
+                        variant="destructive"
+                        className="w-full justify-start"
                         onClick={handleSignOut}
                       >
                         <LogOut className="mr-2 h-4 w-4" />
