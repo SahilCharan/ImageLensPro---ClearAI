@@ -26,6 +26,61 @@ const ERROR_LABELS = {
   suggestions: 'Suggestion'
 };
 
+/**
+ * Parse coordinates from webhook response
+ * Supports both string format "x: 295, y: 126, width: 440, height: 10"
+ * and object format { x: 295, y: 126, width: 440, height: 10 }
+ * Also converts percentages to pixels if needed
+ */
+function parseCoordinatesFromWebhook(
+  coordInput: string | { x: number; y: number; width?: number; height?: number } | undefined,
+  naturalWidth: number,
+  naturalHeight: number
+): { x: number; y: number; width: number; height: number } {
+  if (!coordInput) {
+    return { x: 0, y: 0, width: 0, height: 0 };
+  }
+
+  let coords: { x: number; y: number; width?: number; height?: number };
+
+  // Parse string format
+  if (typeof coordInput === 'string') {
+    const parts = coordInput.split(',').map(p => p.trim());
+    const parsed: Record<string, number> = {};
+    
+    parts.forEach(part => {
+      const [key, value] = part.split(':').map(s => s.trim());
+      // Handle percentage values
+      if (value.includes('%')) {
+        const percentage = parseFloat(value.replace('%', '')) / 100;
+        if (key === 'x' || key === 'width') {
+          parsed[key] = percentage * naturalWidth;
+        } else if (key === 'y' || key === 'height') {
+          parsed[key] = percentage * naturalHeight;
+        }
+      } else {
+        parsed[key] = parseFloat(value);
+      }
+    });
+    
+    coords = {
+      x: parsed.x || 0,
+      y: parsed.y || 0,
+      width: parsed.width,
+      height: parsed.height
+    };
+  } else {
+    coords = coordInput;
+  }
+
+  return {
+    x: coords.x || 0,
+    y: coords.y || 0,
+    width: coords.width || 0,
+    height: coords.height || 0
+  };
+}
+
 export default function ImageAnalysis() {
   const { imageId } = useParams<{ imageId: string }>();
   const navigate = useNavigate();
@@ -35,12 +90,27 @@ export default function ImageAnalysis() {
   const [hoveredError, setHoveredError] = useState<string | null>(null);
   const [imageDimensions, setImageDimensions] = useState({ width: 0, height: 0 });
   const [imageNaturalDimensions, setImageNaturalDimensions] = useState({ width: 0, height: 0 });
+  const [containerOffset, setContainerOffset] = useState({ left: 0, top: 0 });
+  const [isReady, setIsReady] = useState(false);
+  const [showBoxes, setShowBoxes] = useState(true);
   const imageRef = useRef<HTMLImageElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     loadImageData();
   }, [imageId]);
+
+  // Handle window resize to recalculate dimensions
+  useEffect(() => {
+    const handleResize = () => {
+      if (imageRef.current && containerRef.current) {
+        updateDimensions();
+      }
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [imageData]);
 
   const loadImageData = async () => {
     if (!imageId) return;
@@ -69,57 +139,99 @@ export default function ImageAnalysis() {
     }
   };
 
+  const updateDimensions = () => {
+    if (!imageRef.current || !containerRef.current) return;
+
+    const img = imageRef.current;
+    const container = containerRef.current;
+
+    // Use getBoundingClientRect for accurate displayed dimensions
+    const imgRect = img.getBoundingClientRect();
+    const containerRect = container.getBoundingClientRect();
+
+    // Store displayed dimensions
+    const displayed = {
+      width: imgRect.width,
+      height: imgRect.height
+    };
+
+    // Calculate container offset (for padding/borders)
+    const offset = {
+      left: imgRect.left - containerRect.left,
+      top: imgRect.top - containerRect.top
+    };
+
+    // Use Gemini-provided dimensions if available, otherwise use natural dimensions
+    const original = {
+      width: imageData?.original_width || img.naturalWidth,
+      height: imageData?.original_height || img.naturalHeight
+    };
+
+    console.log('Image dimensions updated:', {
+      displayed,
+      original,
+      offset,
+      geminiProvided: !!(imageData?.original_width && imageData?.original_height),
+      scaleX: displayed.width / original.width,
+      scaleY: displayed.height / original.height
+    });
+
+    setImageDimensions(displayed);
+    setImageNaturalDimensions(original);
+    setContainerOffset(offset);
+    setIsReady(true);
+  };
+
   const handleImageLoad = () => {
-    if (imageRef.current) {
-      const img = imageRef.current;
-      // Store displayed dimensions
-      const displayed = {
-        width: img.offsetWidth,
-        height: img.offsetHeight
-      };
-      
-      // Use Gemini-provided dimensions if available, otherwise use natural dimensions
-      const original = {
-        width: imageData?.original_width || img.naturalWidth,
-        height: imageData?.original_height || img.naturalHeight
-      };
-      
-      console.log('Image dimensions:', {
-        displayed,
-        original,
-        geminiProvided: !!(imageData?.original_width && imageData?.original_height),
-        scaleX: displayed.width / original.width,
-        scaleY: displayed.height / original.height
-      });
-      
-      setImageDimensions(displayed);
-      setImageNaturalDimensions(original);
-    }
+    updateDimensions();
   };
 
   const getErrorPosition = (error: ImageError) => {
-    if (!imageDimensions.width || !imageDimensions.height || !imageNaturalDimensions.width || !imageNaturalDimensions.height) {
-      return { left: 0, top: 0, width: 0, height: 0 };
+    // Guard: Don't render until dimensions are ready
+    if (!isReady || !imageDimensions.width || !imageDimensions.height || 
+        !imageNaturalDimensions.width || !imageNaturalDimensions.height) {
+      return { left: 0, top: 0, width: 0, height: 0, visible: false };
     }
-    
-    // Coordinates from webhook are in actual image pixels
-    // Scale them to the displayed image size
+
+    // Calculate scale factors
     const scaleX = imageDimensions.width / imageNaturalDimensions.width;
     const scaleY = imageDimensions.height / imageNaturalDimensions.height;
-    
-    const left = Number(error.x_coordinate) * scaleX;
-    const top = Number(error.y_coordinate) * scaleY;
-    const width = error.width ? Number(error.width) * scaleX : 20; // Default 20px if no width
-    const height = error.height ? Number(error.height) * scaleY : 20; // Default 20px if no height
-    
+
+    // Get coordinates from error (already in pixels from webhook)
+    const x = Number(error.x_coordinate) || 0;
+    const y = Number(error.y_coordinate) || 0;
+    const w = Number(error.width) || 0;
+    const h = Number(error.height) || 0;
+
+    // Scale to displayed size
+    let left = x * scaleX;
+    let top = y * scaleY;
+    let width = w * scaleX;
+    let height = h * scaleY;
+
+    // Apply minimum dimensions (3px) to prevent invisible boxes
+    width = Math.max(width, 3);
+    height = Math.max(height, 3);
+
+    // Clamp to image boundaries to prevent overflow
+    left = Math.max(0, Math.min(left, imageDimensions.width - width));
+    top = Math.max(0, Math.min(top, imageDimensions.height - height));
+
     console.log('Error position calculation:', {
       errorId: error.id,
-      original: { x: error.x_coordinate, y: error.y_coordinate, w: error.width, h: error.height },
-      scale: { scaleX, scaleY },
-      result: { left, top, width, height }
+      errorType: error.error_type,
+      original: { x, y, w, h },
+      scale: { scaleX: scaleX.toFixed(4), scaleY: scaleY.toFixed(4) },
+      result: { 
+        left: left.toFixed(2), 
+        top: top.toFixed(2), 
+        width: width.toFixed(2), 
+        height: height.toFixed(2) 
+      },
+      containerOffset
     });
-    
-    return { left, top, width, height };
+
+    return { left, top, width, height, visible: true };
   };
 
   const groupedErrors = imageData?.errors?.reduce((acc, error) => {
@@ -164,12 +276,23 @@ export default function ImageAnalysis() {
                       : 'No errors detected'}
                   </CardDescription>
                 </div>
-                {(imageData.status === 'pending' || imageData.status === 'processing') && (
-                  <Button onClick={loadImageData}>
-                    <RefreshCw className="mr-2 h-4 w-4" />
-                    Refresh Status
-                  </Button>
-                )}
+                <div className="flex gap-2">
+                  {imageData.errors && imageData.errors.length > 0 && (
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => setShowBoxes(!showBoxes)}
+                    >
+                      {showBoxes ? 'Hide Boxes' : 'Show Boxes'}
+                    </Button>
+                  )}
+                  {(imageData.status === 'pending' || imageData.status === 'processing') && (
+                    <Button onClick={loadImageData}>
+                      <RefreshCw className="mr-2 h-4 w-4" />
+                      Refresh Status
+                    </Button>
+                  )}
+                </div>
               </div>
             </CardHeader>
             <CardContent>
@@ -186,9 +309,27 @@ export default function ImageAnalysis() {
                   onLoad={handleImageLoad}
                 />
                 
-                {imageData.errors?.map((error) => {
+                {showBoxes && imageData.errors?.map((error) => {
                   const position = getErrorPosition(error);
+                  
+                  // Don't render if not visible or dimensions not ready
+                  if (!position.visible || position.width === 0 || position.height === 0) {
+                    return null;
+                  }
+                  
                   const isHovered = hoveredError === error.id;
+                  
+                  // Normalize error type to lowercase for color lookup
+                  const errorTypeKey = error.error_type.toLowerCase();
+                  const errorColor = ERROR_COLORS[errorTypeKey] || ERROR_COLORS.spelling;
+                  const errorLabel = ERROR_LABELS[errorTypeKey] || error.error_type;
+                  
+                  // Calculate tooltip position (below by default, above if would overflow)
+                  const tooltipTop = position.height + 8;
+                  const wouldOverflowBottom = position.top + position.height + 200 > imageDimensions.height;
+                  const tooltipStyle = wouldOverflowBottom 
+                    ? { bottom: `${position.height + 8}px` }
+                    : { top: `${tooltipTop}px` };
                   
                   return (
                     <div
@@ -207,12 +348,12 @@ export default function ImageAnalysis() {
                       <div
                         className="w-full h-full border-2 rounded"
                         style={{
-                          borderColor: ERROR_COLORS[error.error_type],
+                          borderColor: errorColor,
                           backgroundColor: isHovered 
-                            ? `${ERROR_COLORS[error.error_type]}40` 
-                            : `${ERROR_COLORS[error.error_type]}20`,
+                            ? `${errorColor}40` 
+                            : `${errorColor}20`,
                           boxShadow: isHovered 
-                            ? `0 0 20px ${ERROR_COLORS[error.error_type]}` 
+                            ? `0 0 20px ${errorColor}` 
                             : `0 2px 4px rgba(0,0,0,0.2)`
                         }}
                       />
@@ -222,16 +363,16 @@ export default function ImageAnalysis() {
                           className="absolute left-0 bg-popover text-popover-foreground p-3 rounded-lg shadow-xl border border-border min-w-64 z-20"
                           style={{ 
                             pointerEvents: 'none',
-                            top: `${position.height + 8}px`
+                            ...tooltipStyle
                           }}
                         >
                           <div className="flex items-center gap-2 mb-2">
                             <div
                               className="w-3 h-3 rounded-full"
-                              style={{ backgroundColor: ERROR_COLORS[error.error_type] }}
+                              style={{ backgroundColor: errorColor }}
                             />
                             <span className="font-semibold text-sm">
-                              {ERROR_LABELS[error.error_type]}
+                              {errorLabel}
                             </span>
                           </div>
                           {error.original_text && (
