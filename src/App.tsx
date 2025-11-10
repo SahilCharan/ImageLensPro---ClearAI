@@ -1,4 +1,4 @@
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth } from '@/hooks/useAuth';
 import { RequireAuth } from '@/components/auth/RequireAuth';
 import Header from '@/components/common/Header';
@@ -7,6 +7,10 @@ import routes from './routes';
 
 function AppContent() {
   const { loading } = useAuth();
+  const location = useLocation();
+  
+  // Don't show header on login and signup pages
+  const hideHeader = ['/login', '/signup'].includes(location.pathname);
 
   if (loading) {
     return (
@@ -19,8 +23,8 @@ function AppContent() {
   return (
     <>
       <Toaster />
-      <RequireAuth whiteList={['/login']}>
-        <Header />
+      <RequireAuth whiteList={['/login', '/signup']}>
+        {!hideHeader && <Header />}
         <main className="min-h-screen">
           <Routes>
             {routes.map((route, index) => (
