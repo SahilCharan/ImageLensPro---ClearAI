@@ -75,12 +75,33 @@ export const webhookService = {
       const response = await fetch(webhookUrl, {
         method: 'POST',
         body: formData, // Send FormData with the actual image file
+        // Note: Don't set Content-Type header - browser will set it automatically with boundary
       });
 
       console.log('Webhook response status:', response.status, response.statusText);
 
       if (!response.ok) {
-        throw new Error(`Webhook request failed: ${response.status} ${response.statusText}`);
+        // Try to get error details from response
+        let errorDetails = '';
+        try {
+          const errorText = await response.text();
+          errorDetails = errorText ? `: ${errorText}` : '';
+          console.error('Webhook error response:', errorText);
+        } catch (e) {
+          console.error('Could not read error response:', e);
+        }
+        
+        // Special handling for 403 Forbidden
+        if (response.status === 403) {
+          console.error('403 Forbidden - Possible causes:');
+          console.error('1. N8N webhook requires authentication');
+          console.error('2. CORS policy blocking the request');
+          console.error('3. Webhook URL is incorrect or inactive');
+          console.error('4. N8N workflow is not active');
+          throw new Error(`Webhook access forbidden (403). Check N8N webhook configuration${errorDetails}`);
+        }
+        
+        throw new Error(`Webhook request failed: ${response.status} ${response.statusText}${errorDetails}`);
       }
 
       const rawData = await response.json();
