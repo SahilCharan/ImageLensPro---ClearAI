@@ -29,7 +29,8 @@ const mapErrorType = (webhookType: string): ImageError['error_type'] => {
     'Spelling': 'spelling',
     'Spacing': 'space',
     'Context': 'context',
-    'Suggestions': 'suggestions'
+    'Suggestions': 'suggestions',
+    'Formatting': 'suggestions' // Map formatting errors to suggestions
   };
   return typeMap[webhookType] || 'context';
 };
@@ -108,13 +109,40 @@ export const webhookService = {
           
           console.log('Processing error:', error.error_id, 'coordField:', coordField);
           
-          // Parse coordinates from string format "x: 295, y: 126, width: 440, height: 10"
-          // or use object format directly
-          const coords = typeof coordField === 'string' 
-            ? parseCoordinates(coordField)
-            : coordField || { x: 0, y: 0, width: 0, height: 0 };
+          let coords: { x: number; y: number; width?: number; height?: number };
           
-          console.log('Parsed coordinates:', coords);
+          // Handle different coordinate formats
+          if (Array.isArray(coordField) && coordField.length === 4) {
+            // Normalized format: [y1, x1, y2, x2] (fractions 0-1)
+            // Convert to pixel coordinates using image dimensions
+            const [y1, x1, y2, x2] = coordField.map(Number);
+            const imgWidth = imageDimensions?.width || 1920;
+            const imgHeight = imageDimensions?.height || 1080;
+            
+            coords = {
+              x: x1 * imgWidth,
+              y: y1 * imgHeight,
+              width: (x2 - x1) * imgWidth,
+              height: (y2 - y1) * imgHeight
+            };
+            
+            console.log('Converted normalized coords:', {
+              normalized: coordField,
+              imageDims: { width: imgWidth, height: imgHeight },
+              pixels: coords
+            });
+          } else if (typeof coordField === 'string') {
+            // String format: "x: 295, y: 126, width: 440, height: 10"
+            coords = parseCoordinates(coordField);
+          } else if (coordField && typeof coordField === 'object') {
+            // Object format: { x: 295, y: 126, width: 440, height: 10 }
+            coords = coordField as { x: number; y: number; width?: number; height?: number };
+          } else {
+            // Fallback
+            coords = { x: 0, y: 0, width: 0, height: 0 };
+          }
+          
+          console.log('Final parsed coordinates:', coords);
           
           return {
             image_id: imageId,
