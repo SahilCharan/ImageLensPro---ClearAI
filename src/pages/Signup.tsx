@@ -22,8 +22,40 @@ export default function Signup() {
   });
 
   const validateEmail = (email: string) => {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return emailRegex.test(email);
+    // More strict email validation
+    // Requires: username@domain.extension
+    // - Username: alphanumeric, dots, hyphens, underscores
+    // - Domain: alphanumeric, dots, hyphens (at least 2 chars)
+    // - Extension: at least 2 letters (com, org, net, etc.)
+    const emailRegex = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+    
+    if (!emailRegex.test(email)) {
+      return false;
+    }
+    
+    // Additional checks
+    const parts = email.split('@');
+    if (parts.length !== 2) return false;
+    
+    const [username, domain] = parts;
+    
+    // Username must be at least 1 character
+    if (username.length < 1) return false;
+    
+    // Domain must have at least one dot and proper structure
+    const domainParts = domain.split('.');
+    if (domainParts.length < 2) return false;
+    
+    // Each domain part must be at least 1 character
+    for (const part of domainParts) {
+      if (part.length < 1) return false;
+    }
+    
+    // Top-level domain (last part) must be at least 2 characters
+    const tld = domainParts[domainParts.length - 1];
+    if (tld.length < 2) return false;
+    
+    return true;
   };
 
   const validatePassword = (password: string) => {

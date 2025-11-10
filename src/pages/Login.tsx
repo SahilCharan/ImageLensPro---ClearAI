@@ -29,6 +29,34 @@ export default function Login() {
     }
   }, [user, navigate, from]);
 
+  const validateEmail = (email: string) => {
+    // More strict email validation
+    // Requires: username@domain.extension
+    const emailRegex = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+    
+    if (!emailRegex.test(email)) {
+      return false;
+    }
+    
+    const parts = email.split('@');
+    if (parts.length !== 2) return false;
+    
+    const [username, domain] = parts;
+    if (username.length < 1) return false;
+    
+    const domainParts = domain.split('.');
+    if (domainParts.length < 2) return false;
+    
+    for (const part of domainParts) {
+      if (part.length < 1) return false;
+    }
+    
+    const tld = domainParts[domainParts.length - 1];
+    if (tld.length < 2) return false;
+    
+    return true;
+  };
+
   const handleEmailLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -36,6 +64,15 @@ export default function Login() {
       toast({
         title: 'Validation Error',
         description: 'Please enter both email and password',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    if (!validateEmail(formData.email)) {
+      toast({
+        title: 'Invalid Email',
+        description: 'Please enter a valid email address (e.g., user@example.com)',
         variant: 'destructive'
       });
       return;

@@ -23,6 +23,11 @@ export default function Header() {
     navigate(path);
   };
 
+  // Get display name and initial
+  const displayName = profile?.full_name || profile?.email?.split('@')[0] || user?.email?.split('@')[0] || 'User';
+  const displayEmail = profile?.email || user?.email || '';
+  const initial = displayName[0]?.toUpperCase() || 'U';
+
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/60">
       <div className="container mx-auto flex h-16 items-center justify-between px-4">
@@ -43,41 +48,42 @@ export default function Header() {
                 <Button variant="ghost">Upload</Button>
               </Link>
               
-              {/* User Profile Dropdown */}
+              {/* User Profile Dropdown - More Visible */}
               <Popover>
                 <PopoverTrigger asChild>
                   <Button 
                     variant="outline" 
-                    className="relative h-10 gap-2 px-3 rounded-full border-2 hover:border-primary transition-colors"
+                    className="relative h-10 gap-2 px-3 rounded-full border-2 border-primary/50 hover:border-primary hover:bg-primary/5 transition-all shadow-sm"
                   >
-                    <Avatar className="h-7 w-7">
-                      <AvatarImage src={profile?.avatar_url || undefined} alt={profile?.full_name || 'User'} />
-                      <AvatarFallback className="bg-primary text-primary-foreground text-sm">
-                        {(profile?.full_name || profile?.email || 'U')[0].toUpperCase()}
+                    <Avatar className="h-7 w-7 ring-2 ring-primary/20">
+                      <AvatarImage src={profile?.avatar_url || undefined} alt={displayName} />
+                      <AvatarFallback className="bg-primary text-primary-foreground text-sm font-bold">
+                        {initial}
                       </AvatarFallback>
                     </Avatar>
-                    <span className="text-sm font-medium max-w-[100px] truncate">
-                      {profile?.full_name || profile?.email?.split('@')[0] || 'User'}
+                    <span className="text-sm font-semibold max-w-[100px] truncate">
+                      {displayName}
                     </span>
+                    <User className="h-4 w-4 text-muted-foreground" />
                   </Button>
                 </PopoverTrigger>
-                <PopoverContent align="end" className="w-64 p-0">
+                <PopoverContent align="end" className="w-64 p-0 shadow-lg">
                   <div className="flex flex-col">
                     {/* User Info Section */}
                     <div className="px-4 py-3 bg-muted/50">
                       <div className="flex items-center gap-3">
-                        <Avatar className="h-10 w-10">
-                          <AvatarImage src={profile?.avatar_url || undefined} alt={profile?.full_name || 'User'} />
-                          <AvatarFallback className="bg-primary text-primary-foreground">
-                            {(profile?.full_name || profile?.email || 'U')[0].toUpperCase()}
+                        <Avatar className="h-10 w-10 ring-2 ring-primary/30">
+                          <AvatarImage src={profile?.avatar_url || undefined} alt={displayName} />
+                          <AvatarFallback className="bg-primary text-primary-foreground font-bold">
+                            {initial}
                           </AvatarFallback>
                         </Avatar>
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium leading-none truncate">
-                            {profile?.full_name || 'User'}
+                          <p className="text-sm font-semibold leading-none truncate">
+                            {displayName}
                           </p>
                           <p className="text-xs leading-none text-muted-foreground mt-1 truncate">
-                            {profile?.email}
+                            {displayEmail}
                           </p>
                           {profile?.role === 'admin' && (
                             <span className="inline-flex items-center gap-1 mt-1 px-2 py-0.5 rounded-full text-xs font-medium bg-primary/10 text-primary">
@@ -95,7 +101,7 @@ export default function Header() {
                     <div className="p-1">
                       <Button
                         variant="ghost"
-                        className="w-full justify-start"
+                        className="w-full justify-start hover:bg-muted"
                         onClick={() => handleNavigation('/')}
                       >
                         <Home className="mr-2 h-4 w-4" />
@@ -103,7 +109,7 @@ export default function Header() {
                       </Button>
                       <Button
                         variant="ghost"
-                        className="w-full justify-start"
+                        className="w-full justify-start hover:bg-muted"
                         onClick={() => handleNavigation('/dashboard')}
                       >
                         <LayoutDashboard className="mr-2 h-4 w-4" />
@@ -111,7 +117,7 @@ export default function Header() {
                       </Button>
                       <Button
                         variant="ghost"
-                        className="w-full justify-start"
+                        className="w-full justify-start hover:bg-muted"
                         onClick={() => handleNavigation('/upload')}
                       >
                         <UploadIcon className="mr-2 h-4 w-4" />
@@ -120,7 +126,7 @@ export default function Header() {
                       {profile?.role === 'admin' && (
                         <Button
                           variant="ghost"
-                          className="w-full justify-start"
+                          className="w-full justify-start hover:bg-muted"
                           onClick={() => handleNavigation('/admin')}
                         >
                           <Shield className="mr-2 h-4 w-4" />
@@ -131,11 +137,11 @@ export default function Header() {
                     
                     <Separator />
                     
-                    {/* Sign Out Button - Prominent */}
+                    {/* Sign Out Button - Very Prominent */}
                     <div className="p-2">
                       <Button
                         variant="destructive"
-                        className="w-full justify-start"
+                        className="w-full justify-start font-semibold shadow-sm hover:shadow-md transition-shadow"
                         onClick={handleSignOut}
                       >
                         <LogOut className="mr-2 h-4 w-4" />
