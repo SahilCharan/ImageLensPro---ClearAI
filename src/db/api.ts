@@ -270,23 +270,50 @@ export const accountRequestApi = {
     password: string;
     message?: string;
   }): Promise<AccountRequest> {
-    // Hash the password (in production, this should be done server-side)
-    // For now, we'll store it as-is and let Supabase handle it during account creation
-    const { data, error } = await supabase
-      .from('account_requests')
-      .insert({
+    console.log('[API] Creating account request with data:', {
+      full_name: requestData.full_name,
+      email: requestData.email,
+      has_password: !!requestData.password,
+      has_message: !!requestData.message
+    });
+
+    try {
+      // Hash the password (in production, this should be done server-side)
+      // For now, we'll store it as-is and let Supabase handle it during account creation
+      const insertData = {
         full_name: requestData.full_name,
         email: requestData.email,
         password_hash: requestData.password, // Will be properly hashed by Supabase Auth
         message: requestData.message || null,
-        status: 'pending'
-      })
-      .select()
-      .maybeSingle();
+        status: 'pending' as const
+      };
 
-    if (error) throw error;
-    if (!data) throw new Error('Failed to create account request');
-    return data;
+      console.log('[API] Inserting data into account_requests table...');
+      
+      const { data, error } = await supabase
+        .from('account_requests')
+        .insert(insertData)
+        .select()
+        .maybeSingle();
+
+      console.log('[API] Supabase response:', { data, error });
+
+      if (error) {
+        console.error('[API] Supabase error:', error);
+        throw error;
+      }
+      
+      if (!data) {
+        console.error('[API] No data returned from insert');
+        throw new Error('Failed to create account request');
+      }
+      
+      console.log('[API] Account request created successfully:', data);
+      return data;
+    } catch (err) {
+      console.error('[API] Exception in createAccountRequest:', err);
+      throw err;
+    }
   },
 
   async getAllAccountRequests(): Promise<AccountRequest[]> {

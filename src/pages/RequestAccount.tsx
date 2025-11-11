@@ -91,6 +91,8 @@ export default function RequestAccount() {
 
     try {
       console.log('Submitting account request...', { full_name: fullName, email });
+      console.log('Supabase URL:', import.meta.env.VITE_SUPABASE_URL);
+      console.log('Supabase Key exists:', !!import.meta.env.VITE_SUPABASE_ANON_KEY);
       
       const result = await accountRequestApi.createAccountRequest({
         full_name: fullName,
@@ -99,7 +101,7 @@ export default function RequestAccount() {
         message: message.trim() || undefined
       });
 
-      console.log('Account request created:', result);
+      console.log('Account request created successfully:', result);
 
       // Try to send email notification to admins
       try {
@@ -132,10 +134,14 @@ export default function RequestAccount() {
       });
     } catch (error) {
       console.error('Account request error:', error);
+      console.error('Error type:', typeof error);
+      console.error('Error details:', JSON.stringify(error, null, 2));
       
       // More detailed error message
       let errorMessage = 'Failed to submit account request. Please try again.';
       if (error instanceof Error) {
+        console.error('Error message:', error.message);
+        console.error('Error stack:', error.stack);
         errorMessage = error.message;
         
         // Check for specific error types
@@ -143,6 +149,8 @@ export default function RequestAccount() {
           errorMessage = 'An account request with this email already exists.';
         } else if (error.message.includes('permission') || error.message.includes('denied')) {
           errorMessage = 'Permission denied. Please contact support.';
+        } else if (error.message.includes('Failed to fetch') || error.message.includes('network')) {
+          errorMessage = 'Network error. Please check your internet connection and try again.';
         }
       }
       
