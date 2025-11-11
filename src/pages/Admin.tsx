@@ -24,6 +24,7 @@ import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { Shield, Users, Loader2, Activity, Monitor, RefreshCw } from 'lucide-react';
 import { format } from 'date-fns';
+import AccountRequests from '@/components/admin/AccountRequests';
 
 export default function Admin() {
   const { profile } = useAuth();
@@ -204,6 +205,11 @@ export default function Admin() {
             </p>
           </CardContent>
         </Card>
+      </div>
+
+      {/* Account Requests Section */}
+      <div className="mb-8">
+        <AccountRequests />
       </div>
 
       <Card className="mb-8">
