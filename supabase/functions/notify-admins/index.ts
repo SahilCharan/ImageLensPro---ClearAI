@@ -115,7 +115,7 @@ Deno.serve(async (req: Request) => {
           'Authorization': `Bearer ${RESEND_API_KEY}`,
         },
         body: JSON.stringify({
-          from: 'ClearAI <noreply@clearai.app>',
+          from: 'ClearAI <onboarding@resend.dev>',
           to: [adminEmail],
           subject,
           html: htmlContent,
