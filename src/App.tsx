@@ -9,8 +9,8 @@ function AppContent() {
   const { loading } = useAuth();
   const location = useLocation();
   
-  // Don't show header on login and signup pages
-  const hideHeader = ['/login', '/signup'].includes(location.pathname);
+  // Don't show header on login and request-account pages
+  const hideHeader = ['/login', '/request-account'].includes(location.pathname);
 
   if (loading) {
     return (
@@ -23,7 +23,7 @@ function AppContent() {
   return (
     <>
       <Toaster />
-      <RequireAuth whiteList={['/login', '/signup']}>
+      <RequireAuth whiteList={['/login', '/request-account']}>
         {!hideHeader && <Header />}
         <main className="min-h-screen">
           <Routes>
