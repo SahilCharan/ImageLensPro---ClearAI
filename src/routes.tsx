@@ -1,5 +1,5 @@
 import Login from './pages/Login';
-import Signup from './pages/Signup';
+import RequestAccount from './pages/RequestAccount';
 import Dashboard from './pages/Dashboard';
 import Upload from './pages/Upload';
 import ImageAnalysis from './pages/ImageAnalysis';
@@ -27,9 +27,9 @@ const routes: RouteConfig[] = [
     visible: false
   },
   {
-    name: 'Signup',
-    path: '/signup',
-    element: <Signup />,
+    name: 'Request Account',
+    path: '/request-account',
+    element: <RequestAccount />,
     visible: false
   },
   {

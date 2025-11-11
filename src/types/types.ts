@@ -1,4 +1,6 @@
 export type UserRole = 'user' | 'admin';
+export type ApprovalStatus = 'pending' | 'approved' | 'rejected';
+export type RequestStatus = 'pending' | 'approved' | 'rejected';
 
 export interface Profile {
   id: string;
@@ -6,7 +8,23 @@ export interface Profile {
   full_name: string | null;
   avatar_url: string | null;
   role: UserRole;
+  approval_status: ApprovalStatus;
+  approved_by: string | null;
+  approved_at: string | null;
   created_at: string;
+}
+
+export interface AccountRequest {
+  id: string;
+  full_name: string;
+  email: string;
+  password_hash: string;
+  message: string | null;
+  status: RequestStatus;
+  approved_by: string | null;
+  approved_at: string | null;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface UserSession {

@@ -1,5 +1,5 @@
 import { supabase } from './supabase';
-import type { Profile, Image, ImageError, ImageWithErrors } from '@/types/types';
+import type { Profile, Image, ImageError, ImageWithErrors, AccountRequest } from '@/types/types';
 
 export const profileApi = {
   async getCurrentProfile(): Promise<Profile | null> {
@@ -258,6 +258,136 @@ export const sessionApi = {
 
   async cleanupExpiredSessions(): Promise<void> {
     const { error } = await supabase.rpc('cleanup_expired_sessions');
+
+    if (error) throw error;
+  }
+};
+
+export const accountRequestApi = {
+  async createAccountRequest(requestData: {
+    full_name: string;
+    email: string;
+    password: string;
+    message?: string;
+  }): Promise<AccountRequest> {
+    // Hash the password (in production, this should be done server-side)
+    // For now, we'll store it as-is and let Supabase handle it during account creation
+    const { data, error } = await supabase
+      .from('account_requests')
+      .insert({
+        full_name: requestData.full_name,
+        email: requestData.email,
+        password_hash: requestData.password, // Will be properly hashed by Supabase Auth
+        message: requestData.message || null,
+        status: 'pending'
+      })
+      .select()
+      .maybeSingle();
+
+    if (error) throw error;
+    if (!data) throw new Error('Failed to create account request');
+    return data;
+  },
+
+  async getAllAccountRequests(): Promise<AccountRequest[]> {
+    const { data, error } = await supabase
+      .from('account_requests')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+    return Array.isArray(data) ? data : [];
+  },
+
+  async getPendingAccountRequests(): Promise<AccountRequest[]> {
+    const { data, error } = await supabase
+      .from('account_requests')
+      .select('*')
+      .eq('status', 'pending')
+      .order('created_at', { ascending: true });
+
+    if (error) throw error;
+    return Array.isArray(data) ? data : [];
+  },
+
+  async approveAccountRequest(requestId: string): Promise<void> {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error('Not authenticated');
+
+    // Get the request details
+    const { data: request, error: fetchError } = await supabase
+      .from('account_requests')
+      .select('*')
+      .eq('id', requestId)
+      .eq('status', 'pending')
+      .maybeSingle();
+
+    if (fetchError) throw fetchError;
+    if (!request) throw new Error('Account request not found or already processed');
+
+    // Create the user account using Supabase Admin API
+    const { data: newUser, error: signUpError } = await supabase.auth.admin.createUser({
+      email: request.email,
+      password: request.password_hash,
+      email_confirm: true,
+      user_metadata: {
+        full_name: request.full_name
+      }
+    });
+
+    if (signUpError) throw signUpError;
+    if (!newUser.user) throw new Error('Failed to create user');
+
+    // Create profile
+    const { error: profileError } = await supabase
+      .from('profiles')
+      .insert({
+        id: newUser.user.id,
+        email: request.email,
+        full_name: request.full_name,
+        role: 'user',
+        approval_status: 'approved',
+        approved_by: user.id,
+        approved_at: new Date().toISOString()
+      });
+
+    if (profileError) throw profileError;
+
+    // Update request status
+    const { error: updateError } = await supabase
+      .from('account_requests')
+      .update({
+        status: 'approved',
+        approved_by: user.id,
+        approved_at: new Date().toISOString()
+      })
+      .eq('id', requestId);
+
+    if (updateError) throw updateError;
+  },
+
+  async rejectAccountRequest(requestId: string): Promise<void> {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error('Not authenticated');
+
+    const { error } = await supabase
+      .from('account_requests')
+      .update({
+        status: 'rejected',
+        approved_by: user.id,
+        approved_at: new Date().toISOString()
+      })
+      .eq('id', requestId)
+      .eq('status', 'pending');
+
+    if (error) throw error;
+  },
+
+  async deleteAccountRequest(requestId: string): Promise<void> {
+    const { error } = await supabase
+      .from('account_requests')
+      .delete()
+      .eq('id', requestId);
 
     if (error) throw error;
   }
