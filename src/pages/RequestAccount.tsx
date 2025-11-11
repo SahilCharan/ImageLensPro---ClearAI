@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { useToast } from '@/hooks/use-toast';
 import { accountRequestApi } from '@/db/api';
 import { Loader2, CheckCircle2 } from 'lucide-react';
+import Logo from '@/components/common/Logo';
 
 export default function RequestAccount() {
   const [fullName, setFullName] = useState('');
@@ -152,7 +153,7 @@ export default function RequestAccount() {
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <div className="flex justify-center mb-4">
-            <img src="/clearai-logo.png" alt="ClearAI" className="h-12" />
+            <Logo className="h-12" />
           </div>
           <CardTitle className="text-2xl">Request Account Access</CardTitle>
           <CardDescription>

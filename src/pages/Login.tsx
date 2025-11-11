@@ -9,6 +9,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Mail, Lock, Eye, EyeOff } from 'lucide-react';
 import { profileApi } from '@/db/api';
+import Logo from '@/components/common/Logo';
 
 export default function Login() {
   const navigate = useNavigate();
@@ -124,7 +125,7 @@ export default function Login() {
       <Card className="w-full max-w-md shadow-xl">
         <CardHeader className="space-y-4 text-center">
           <div className="flex justify-center">
-            <img src="/clearai-logo.png" alt="ClearAI" className="h-12" />
+            <Logo className="h-12" />
           </div>
           <div>
             <CardTitle className="text-2xl font-bold">Welcome Back</CardTitle>
