@@ -1,97 +1,131 @@
-# Image Error Detection Application Requirements Document
+# ClearAI Image Text Error Detection Application Requirements Document
 
 ## 1. Application Overview
 ### 1.1 Application Name
-ImageLens Pro
-
+ClearAI 'Image Text Error Detection'\n
 ### 1.2 Application Description
-An intelligent web-based image error detection and correction platform that analyzes uploaded images, identifies various types of errors, and provides interactive visual feedback with hover effects and color-coded highlighting.
+A clean, minimalist AI-powered web application for detecting and analyzing text errors in images. The platform provides streamlined image processing with tabular results display, hosted entirely on AWS infrastructure.
 
 ### 1.3 Core Functionality
-- User authentication (login/signup/signout with Google email)
-- Image upload and processing via webhook integration
-- AI-powered error detection and analysis
-- Interactive error visualization with hover effects
-- Real-time error highlighting with different color combinations
-- Coordinate-based error mapping
-- Error correction suggestions display from backend\n- Admin dashboard for user session monitoring
+- Custom user authentication system (no third-party logins)
+- Administrator approval workflow for new accounts
+- Image upload and processing (drag-and-drop + file button)
+- AI-powered text error detection and analysis\n- Clean tabular results display
+- Administrator dashboard for user management
+- Batch user account creation capability
 
-## 2. Technical Architecture
-### 2.1 Frontend Framework
-- React.js for interactive user interface
-- Image overlay system for error highlighting\n- Hover effect implementation for error details
-- Responsive design for cross-device compatibility
+## 2. AWS Technical Architecture
+### 2.1 Recommended AWS Services Architecture
+**Frontend Hosting:**
+- Amazon S3: Static website hosting for React.js application
+- Amazon CloudFront: CDN for global content delivery and performance\n\n**Backend Services:**
+- AWS API Gateway: RESTful API endpoints management
+- AWS Lambda: Serverless functions for business logic
+- Amazon Cognito: Custom user pool management (without third-party providers)
+\n**Database & Storage:**
+- Amazon DynamoDB: User accounts, authentication data, and processing history
+- Amazon S3: Image file storage with lifecycle policies
 
-### 2.2 Backend Integration
-- N8N workflow integration via webhook
-- Image analysis and error detection processing
-- Coordinate data management for error positioning
-- Backend-generated suggestions and corrections
-- User session tracking and device management
-- Real-time user analytics for admin dashboard
+**Processing & AI:**
+- Amazon Textract: Text extraction from images
+- AWS Lambda: Custom error detection algorithms
+- Amazon SQS: Queue management for image processing jobs
+\n**Security & Monitoring:**
+- AWS IAM: Role-based access control\n- Amazon CloudWatch: Logging and monitoring
+- AWS WAF: Web application firewall protection
 
-### 2.3 Authentication System
-- Google email third-party login/registration
-- User session management with sign-out functionality
-- Multi-device session tracking per user
-- Secure access control
-- Admin role management for user monitoring
+### 2.2 Architecture Workflow
+**User Registration Flow:**
+1. User submits account request via frontend form
+2. API Gateway → Lambda function stores request in DynamoDB\n3. Amazon SES sends email notification to administrator
+4. Administrator reviews request in admin dashboard
+5. Admin approves/rejects via dashboard → updates DynamoDB user status
+\n**Image Processing Flow:**
+1. User uploads image → S3 bucket storage
+2. Lambda function triggered → processes image with Textract
+3. Custom error detection algorithm analyzes extracted text
+4. Results stored in DynamoDB and returned to frontend
+5. Clean table display with ERROR, TYPE, DESCRIPTION, LOCATION columns
 
-## 3. Key Features
-### 3.1 Image Upload & Processing
-- Drag-and-drop image upload interface
+## 3. Authentication System
+### 3.1 Custom Authentication (No Third-Party)\n- Username/email and password-based registration
+- Administrator email notification system for new account requests
+- Manual account approval workflow
+- Secure login with JWT token management
+- Session management without external OAuth providers
+
+### 3.2 Administrator Dashboard
+- Secure admin login with elevated privileges
+- Account request review and approval interface
+- Batch user account creation functionality\n- User management and monitoring tools
+- Processing history and analytics\n
+## 4. User Interface Design
+### 4.1 Main Application Page
+**Image Input Section:**
+- Prominent drag-and-drop area for image upload
+- Traditional file upload button as alternative
 - Support for common image formats (JPG, PNG, GIF)
-- Real-time processing status indicators
+\n**Processing Control:**
+- Single, clear 'Process' button to initiate analysis
+- Processing status indicators
+\n**Results Display:**
+- Clean, well-structured table with columns:\n  - ERROR: Detected error text
+  - TYPE: Error category (spelling, grammar, spacing, etc.)
+  - DESCRIPTION: Detailed error explanation
+  - LOCATION: Position coordinates in image
+- Minimal yet highly readable design
+- Export functionality for results
 
-### 3.2 Error Detection & Visualization
-- Five error types: spelling, grammatical, space, context, and suggestions
-- Color-coded error highlighting system for each error type
-- Interactive dot markers for error locations
-- Hover effects revealing error details and backend suggestions
-- Coordinate-based error positioning
-- Original image preservation with overlay system
+### 4.2 Login & Registration Pages
+- Clean login form with username/password fields
+- 'Create Account' link leading to registration form
+- Registration form for credential submission
+- Account pending approval status page
 
-### 3.3 User Interface
-- Clean dashboard for image management
-- Side panel for error summary and corrections
-- Zoom and pan functionality for detailed inspection
-- Export options for processed results
-- User sign-out option in navigation menu
+## 5. Design Style & Branding
+### 5.1 Logo Integration
+- Incorporate provided logo file (image.png) into application header
+- Color scheme coordination based on logo theme
+- Consistent branding across all pages
 
-### 3.4 Admin Dashboard
-- Real-time display of currently logged-in users count
-- Multi-device login tracking per individual user
-- User session analytics and monitoring tools
-\n### 3.5 Footer Section
-- Compact footer with developer attribution
-- Contact information and feedback links
-- Minimal design to maintain focus on main application
+### 5.2 Visual Design
+- Clean, minimalist aesthetic throughout
+- Color scheme: Coordinated with ClearAI logo (dark gray #4a5568, mint green #81e6d9, light blue #90cdf4)
+- Modern card-based layout with subtle shadows
+- Rounded corners (6px radius) for contemporary feel
+- Clean typography with proper hierarchy\n- Minimal visual distractions to maintain focus on core functionality
 
-## 4. Design Style
-### 4.1 Color Scheme
-- Primary colors: Red (#ef4444), orange (#f97316), and yellow (#eab308)
-- Error highlighting: Different colors for each error type - red for spelling errors, orange for grammatical errors, yellow for space issues, blue for context errors, green for suggestions
-- Background: Light gray (#f8fafc) for optimal image contrast
-
-### 4.2 Visual Elements\n- Modern card-based layout with subtle shadows
-- Rounded corners (8px radius) for contemporary feel
-- Smooth hover transitions (0.3s ease)
-- Clean typography with proper hierarchy
-- Minimalist icon design for error categories
-- Small, unobtrusive footer with muted text styling
-
-### 4.3 Layout Structure
-- Fixed white container box for image display with consistent dimensions
-- All error marking and interactions contained within the fixed white box\n- Absolute positioning system within the container for precise error placement
+### 5.3 Layout Structure
 - Responsive grid system for different screen sizes
-- Floating action buttons for quick access to key functions
-- Compact footer positioned at bottom with minimal height
+- Fixed container dimensions for consistent image display
+- Streamlined navigation with essential functions only
+- Table-based results layout with clear column headers
 
-## 5. Footer Content
-### 5.1 Developer Attribution
-Made by Kumar Sahil (Dwary Intech)
-Contact info: https://www.linkedin.com/in/sahil-dwary/
-Suggestions?: sahilcharandwary@gmail.com
+## 6. Security & Scalability Considerations
+### 6.1 Security Measures
+- AWS WAF protection against common web attacks
+- IAM roles with least privilege access\n- Encrypted data storage in DynamoDB and S3
+- Secure JWT token implementation
+- Input validation and sanitization\n
+### 6.2 Scalability Features
+- Serverless Lambda functions for automatic scaling
+- CloudFront CDN for global performance
+- DynamoDB auto-scaling capabilities
+- S3 lifecycle policies for cost optimization
+- SQS queuing for handling processing load spikes
+
+## 7. Administrator Access & Code Oversight
+### 7.1 Source Code Access
+- Complete source code repository access for administrator
+- AWS CodeCommit or GitHub integration for version control
+- Documentation for customization and maintenance
+- Deployment scripts and infrastructure as code (CloudFormation/CDK)
+
+### 7.2Monitoring & Analytics
+- CloudWatch dashboards for application performance\n- User activity tracking and processing statistics
+- Error logging and debugging capabilities
+- Cost monitoring and optimization recommendations
 
 ## Reference Files
 1. Research Report: ./workspace/app-7dzvb2e20qgx/docs/report.md
+2. Logo File: image.png (ClearAI branding logo for integration)

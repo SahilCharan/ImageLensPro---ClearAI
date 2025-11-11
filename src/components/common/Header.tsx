@@ -31,11 +31,8 @@ export default function Header() {
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/60">
       <div className="container mx-auto flex h-16 items-center justify-between px-4">
-        <Link to="/" className="flex items-center gap-2">
-          <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-primary text-primary-foreground">
-            <span className="text-xl font-bold">IL</span>
-          </div>
-          <span className="text-xl font-bold text-foreground">ImageLens Pro</span>
+        <Link to="/" className="flex items-center gap-3">
+          <img src="/clearai-logo.png" alt="ClearAI" className="h-10" />
         </Link>
 
         <nav className="flex items-center gap-4">
@@ -45,7 +42,7 @@ export default function Header() {
                 <Button variant="ghost">Dashboard</Button>
               </Link>
               <Link to="/upload">
-                <Button variant="ghost">Upload</Button>
+                <Button variant="ghost">Process Image</Button>
               </Link>
               
               {/* User Profile Dropdown - More Visible */}
@@ -121,7 +118,7 @@ export default function Header() {
                         onClick={() => handleNavigation('/upload')}
                       >
                         <UploadIcon className="mr-2 h-4 w-4" />
-                        Upload Image
+                        Process Image
                       </Button>
                       {profile?.role === 'admin' && (
                         <Button

@@ -10,67 +10,71 @@ All colors MUST be HSL.
 @layer base {
   :root {
     --radius: 0.5rem;
-    /* Woody Orange Theme - Warm and Friendly */
-    --background: 35 100% 98%;
-    --foreground: 25 40% 15%;
+    /* ClearAI Theme - Clean, Professional, Minimalist */
+    /* Primary: Dark Blue (#3d4152 ≈ HSL 230, 15%, 29%) */
+    /* Accent: Cyan (#7dd3c0 ≈ HSL 168, 54%, 65%) */
+    --background: 0 0% 100%;
+    --foreground: 230 15% 29%;
     --card: 0 0% 100%;
-    --card-foreground: 25 40% 15%;
+    --card-foreground: 230 15% 29%;
     --popover: 0 0% 100%;
-    --popover-foreground: 25 40% 15%;
-    --primary: 25 95% 53%;
+    --popover-foreground: 230 15% 29%;
+    --primary: 230 15% 29%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 35 100% 95%;
-    --secondary-foreground: 25 40% 15%;
-    --muted: 35 50% 92%;
-    --muted-foreground: 25 20% 45%;
-    --accent: 45 100% 60%;
-    --accent-foreground: 25 40% 15%;
+    --secondary: 168 54% 65%;
+    --secondary-foreground: 230 15% 29%;
+    --muted: 220 15% 95%;
+    --muted-foreground: 230 10% 50%;
+    --accent: 168 54% 65%;
+    --accent-foreground: 230 15% 29%;
     --destructive: 0 84% 60%;
-    --border: 35 30% 88%;
-    --input: 35 30% 88%;
-    --ring: 25 95% 53%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 220 15% 90%;
+    --input: 220 15% 90%;
+    --ring: 168 54% 65%;
     --error-spelling: 0 84% 60%;
     --error-grammatical: 25 95% 53%;
     --error-space: 45 93% 47%;
     --error-context: 217 91% 60%;
     --error-suggestions: 142 71% 45%;
-    --chart-1: 25 95% 53%;
-    --chart-2: 142 71% 45%;
-    --chart-3: 45 93% 47%;
-    --chart-4: 217 91% 60%;
-    --chart-5: 0 84% 60%;
+    --chart-1: 230 15% 29%;
+    --chart-2: 168 54% 65%;
+    --chart-3: 200 70% 55%;
+    --chart-4: 180 60% 50%;
+    --chart-5: 150 50% 55%;
   }
 
   .dark {
-    /* Dark mode with warm orange accents */
-    --background: 25 30% 10%;
-    --foreground: 35 100% 98%;
-    --card: 25 25% 15%;
-    --card-foreground: 35 100% 98%;
-    --popover: 25 25% 15%;
-    --popover-foreground: 35 100% 98%;
-    --primary: 25 95% 53%;
-    --primary-foreground: 0 0% 100%;
-    --secondary: 25 20% 20%;
-    --secondary-foreground: 35 100% 98%;
-    --muted: 25 20% 20%;
-    --muted-foreground: 35 30% 65%;
-    --accent: 45 100% 60%;
-    --accent-foreground: 25 30% 10%;
+    /* Dark mode - Clean and professional */
+    --background: 230 20% 12%;
+    --foreground: 0 0% 98%;
+    --card: 230 18% 16%;
+    --card-foreground: 0 0% 98%;
+    --popover: 230 18% 16%;
+    --popover-foreground: 0 0% 98%;
+    --primary: 168 54% 65%;
+    --primary-foreground: 230 20% 12%;
+    --secondary: 230 15% 29%;
+    --secondary-foreground: 0 0% 98%;
+    --muted: 230 15% 20%;
+    --muted-foreground: 220 10% 65%;
+    --accent: 168 54% 65%;
+    --accent-foreground: 230 20% 12%;
     --destructive: 0 84% 60%;
-    --border: 25 20% 25%;
-    --input: 25 20% 25%;
-    --ring: 25 95% 53%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 230 15% 25%;
+    --input: 230 15% 25%;
+    --ring: 168 54% 65%;
     --error-spelling: 0 84% 60%;
     --error-grammatical: 25 95% 53%;
     --error-space: 45 93% 47%;
     --error-context: 217 91% 60%;
     --error-suggestions: 142 71% 45%;
-    --chart-1: 25 95% 53%;
-    --chart-2: 142 71% 45%;
-    --chart-3: 45 93% 47%;
-    --chart-4: 217 91% 60%;
-    --chart-5: 0 84% 60%;
+    --chart-1: 168 54% 65%;
+    --chart-2: 230 15% 29%;
+    --chart-3: 200 70% 55%;
+    --chart-4: 180 60% 50%;
+    --chart-5: 150 50% 55%;
   }
 }
 
