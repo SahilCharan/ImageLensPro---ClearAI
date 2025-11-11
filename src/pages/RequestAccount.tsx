@@ -90,23 +90,65 @@ export default function RequestAccount() {
     setLoading(true);
 
     try {
-      await accountRequestApi.createAccountRequest({
+      console.log('Submitting account request...', { full_name: fullName, email });
+      
+      const result = await accountRequestApi.createAccountRequest({
         full_name: fullName,
         email,
         password,
         message: message.trim() || undefined
       });
 
+      console.log('Account request created:', result);
+
+      // Try to send email notification to admins
+      try {
+        console.log('Sending email notification to admins...');
+        await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/notify-admins`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`
+          },
+          body: JSON.stringify({
+            type: 'new_account_request',
+            data: {
+              full_name: fullName,
+              email,
+              message: message.trim() || 'No message provided'
+            }
+          })
+        });
+        console.log('Email notification sent successfully');
+      } catch (emailError) {
+        console.error('Failed to send email notification:', emailError);
+        // Don't fail the whole request if email fails
+      }
+
       setSubmitted(true);
       toast({
         title: 'Request Submitted',
-        description: 'Your account request has been submitted successfully. You will be notified once approved.',
+        description: 'Your account request has been submitted successfully. Admins will be notified via email.',
       });
     } catch (error) {
       console.error('Account request error:', error);
+      
+      // More detailed error message
+      let errorMessage = 'Failed to submit account request. Please try again.';
+      if (error instanceof Error) {
+        errorMessage = error.message;
+        
+        // Check for specific error types
+        if (error.message.includes('duplicate') || error.message.includes('unique')) {
+          errorMessage = 'An account request with this email already exists.';
+        } else if (error.message.includes('permission') || error.message.includes('denied')) {
+          errorMessage = 'Permission denied. Please contact support.';
+        }
+      }
+      
       toast({
         title: 'Error',
-        description: error instanceof Error ? error.message : 'Failed to submit account request. Please try again.',
+        description: errorMessage,
         variant: 'destructive'
       });
     } finally {
