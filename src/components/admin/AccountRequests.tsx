@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { accountRequestApi } from '@/db/api';
+import { supabase } from '@/db/supabase';
 import type { AccountRequest } from '@/types/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -23,6 +24,9 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
+import { generateMemorablePassword } from '@/utils/passwordGenerator';
 
 export default function AccountRequests() {
   const { toast } = useToast();
@@ -31,6 +35,8 @@ export default function AccountRequests() {
   const [processing, setProcessing] = useState<string | null>(null);
   const [selectedRequest, setSelectedRequest] = useState<AccountRequest | null>(null);
   const [showDetailsDialog, setShowDetailsDialog] = useState(false);
+  const [showApproveDialog, setShowApproveDialog] = useState(false);
+  const [generatedPassword, setGeneratedPassword] = useState('');
 
   const loadRequests = async () => {
     try {
@@ -53,16 +59,54 @@ export default function AccountRequests() {
     loadRequests();
   }, []);
 
-  const handleApprove = async (requestId: string) => {
+  const handleApproveClick = (request: AccountRequest) => {
+    setSelectedRequest(request);
+    const newPassword = generateMemorablePassword();
+    setGeneratedPassword(newPassword);
+    setShowApproveDialog(true);
+  };
+
+  const regeneratePassword = () => {
+    const newPassword = generateMemorablePassword();
+    setGeneratedPassword(newPassword);
+  };
+
+  const handleApprove = async () => {
+    if (!selectedRequest || !generatedPassword) return;
+
     try {
-      setProcessing(requestId);
-      await accountRequestApi.approveAccountRequest(requestId);
+      setProcessing(selectedRequest.id);
+      
+      // Approve the account request with generated password
+      await accountRequestApi.approveAccountRequest(selectedRequest.id, generatedPassword);
+
+      // Send password to user via email
+      try {
+        await supabase.functions.invoke('send-password-email', {
+          body: {
+            email: selectedRequest.email,
+            userName: selectedRequest.full_name || selectedRequest.email.split('@')[0],
+            password: generatedPassword,
+            isNewAccount: true
+          }
+        });
+      } catch (emailError) {
+        console.error('Failed to send password email:', emailError);
+        toast({
+          title: 'Warning',
+          description: 'Account created but email notification failed. Please send password manually.',
+          variant: 'destructive'
+        });
+      }
       
       toast({
         title: 'Success',
-        description: 'Account request approved successfully',
+        description: 'Account approved and password sent to user',
       });
-      
+
+      setShowApproveDialog(false);
+      setSelectedRequest(null);
+      setGeneratedPassword('');
       await loadRequests();
     } catch (error) {
       console.error('Error approving request:', error);
@@ -275,7 +319,7 @@ export default function AccountRequests() {
                               <Button
                                 variant="ghost"
                                 size="sm"
-                                onClick={() => handleApprove(request.id)}
+                                onClick={() => handleApproveClick(request)}
                                 disabled={processing === request.id}
                                 className="text-green-600 hover:text-green-700 hover:bg-green-50"
                               >
@@ -385,7 +429,7 @@ export default function AccountRequests() {
                 <Button
                   variant="outline"
                   onClick={() => {
-                    handleApprove(selectedRequest.id);
+                    handleApproveClick(selectedRequest);
                     setShowDetailsDialog(false);
                   }}
                   disabled={processing === selectedRequest.id}
@@ -410,6 +454,92 @@ export default function AccountRequests() {
             )}
             <Button variant="ghost" onClick={() => setShowDetailsDialog(false)}>
               Close
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Approve Dialog */}
+      <Dialog open={showApproveDialog} onOpenChange={setShowApproveDialog}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>Approve Account Request</DialogTitle>
+            <DialogDescription>
+              Generate and send a password to the new user
+            </DialogDescription>
+          </DialogHeader>
+          
+          {selectedRequest && (
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label>User Name</Label>
+                <Input value={selectedRequest.full_name} disabled />
+              </div>
+
+              <div className="space-y-2">
+                <Label>Email</Label>
+                <Input value={selectedRequest.email} disabled />
+              </div>
+
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label>Generated Password</Label>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={regeneratePassword}
+                  >
+                    <RefreshCw className="h-4 w-4 mr-1" />
+                    Regenerate
+                  </Button>
+                </div>
+                <Input
+                  value={generatedPassword}
+                  onChange={(e) => setGeneratedPassword(e.target.value)}
+                  className="font-mono text-lg"
+                />
+                <p className="text-sm text-muted-foreground">
+                  This password will be sent to the user via email
+                </p>
+              </div>
+
+              <div className="bg-blue-50 dark:bg-blue-950 p-4 rounded-lg border border-blue-200 dark:border-blue-800">
+                <p className="text-sm text-blue-800 dark:text-blue-200">
+                  <strong>ℹ️ Note:</strong> The user will receive their password via email. 
+                  They can use the "Forgot Password" feature if they need to reset it later.
+                </p>
+              </div>
+            </div>
+          )}
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowApproveDialog(false);
+                setSelectedRequest(null);
+                setGeneratedPassword('');
+              }}
+              disabled={processing !== null}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleApprove}
+              disabled={processing !== null || !generatedPassword}
+            >
+              {processing ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Processing...
+                </>
+              ) : (
+                <>
+                  <CheckCircle2 className="h-4 w-4 mr-2" />
+                  Approve & Send
+                </>
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>

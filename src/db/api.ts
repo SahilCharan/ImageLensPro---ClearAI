@@ -1,5 +1,5 @@
 import { supabase } from './supabase';
-import type { Profile, Image, ImageError, ImageWithErrors, AccountRequest } from '@/types/types';
+import type { Profile, Image, ImageError, ImageWithErrors, AccountRequest, PasswordResetRequest } from '@/types/types';
 
 export const profileApi = {
   async getCurrentProfile(): Promise<Profile | null> {
@@ -337,7 +337,7 @@ export const accountRequestApi = {
     return Array.isArray(data) ? data : [];
   },
 
-  async approveAccountRequest(requestId: string): Promise<void> {
+  async approveAccountRequest(requestId: string, generatedPassword: string): Promise<void> {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error('Not authenticated');
 
@@ -352,10 +352,10 @@ export const accountRequestApi = {
     if (fetchError) throw fetchError;
     if (!request) throw new Error('Account request not found or already processed');
 
-    // Create the user account using Supabase Admin API
+    // Create the user account using Supabase Admin API with generated password
     const { data: newUser, error: signUpError } = await supabase.auth.admin.createUser({
       email: request.email,
-      password: request.password_hash,
+      password: generatedPassword,
       email_confirm: true,
       user_metadata: {
         full_name: request.full_name
@@ -413,6 +413,123 @@ export const accountRequestApi = {
   async deleteAccountRequest(requestId: string): Promise<void> {
     const { error } = await supabase
       .from('account_requests')
+      .delete()
+      .eq('id', requestId);
+
+    if (error) throw error;
+  }
+};
+
+export const passwordResetApi = {
+  async checkEmailExists(email: string): Promise<{ exists: boolean; user?: Profile }> {
+    const { data, error } = await supabase
+      .rpc('get_user_by_email', { user_email: email });
+
+    if (error) throw error;
+    
+    if (data && data.length > 0) {
+      return { exists: true, user: data[0] };
+    }
+    
+    return { exists: false };
+  },
+
+  async createPasswordResetRequest(email: string, userId: string): Promise<PasswordResetRequest> {
+    const { data, error } = await supabase
+      .from('password_reset_requests')
+      .insert({
+        email,
+        user_id: userId,
+        status: 'pending'
+      })
+      .select()
+      .maybeSingle();
+
+    if (error) throw error;
+    if (!data) throw new Error('Failed to create password reset request');
+    
+    return data;
+  },
+
+  async getAllPasswordResetRequests(): Promise<PasswordResetRequest[]> {
+    const { data, error } = await supabase
+      .from('password_reset_requests')
+      .select('*')
+      .order('requested_at', { ascending: false });
+
+    if (error) throw error;
+    return Array.isArray(data) ? data : [];
+  },
+
+  async getPendingPasswordResetRequests(): Promise<PasswordResetRequest[]> {
+    const { data, error } = await supabase
+      .from('password_reset_requests')
+      .select('*')
+      .eq('status', 'pending')
+      .order('requested_at', { ascending: false });
+
+    if (error) throw error;
+    return Array.isArray(data) ? data : [];
+  },
+
+  async approvePasswordResetRequest(requestId: string, newPassword: string): Promise<void> {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error('Not authenticated');
+
+    // Get the request details
+    const { data: request, error: fetchError } = await supabase
+      .from('password_reset_requests')
+      .select('*')
+      .eq('id', requestId)
+      .eq('status', 'pending')
+      .maybeSingle();
+
+    if (fetchError) throw fetchError;
+    if (!request) throw new Error('Password reset request not found or already processed');
+    if (!request.user_id) throw new Error('User ID not found in request');
+
+    // Update user password using admin API
+    const { error: updateError } = await supabase.auth.admin.updateUserById(
+      request.user_id,
+      { password: newPassword }
+    );
+
+    if (updateError) throw updateError;
+
+    // Update request status
+    const { error: statusError } = await supabase
+      .from('password_reset_requests')
+      .update({
+        status: 'approved',
+        processed_by: user.id,
+        processed_at: new Date().toISOString()
+      })
+      .eq('id', requestId);
+
+    if (statusError) throw statusError;
+  },
+
+  async rejectPasswordResetRequest(requestId: string, notes?: string): Promise<void> {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error('Not authenticated');
+
+    const { error } = await supabase
+      .from('password_reset_requests')
+      .update({
+        status: 'rejected',
+        processed_by: user.id,
+        processed_at: new Date().toISOString(),
+        notes: notes || null
+      })
+      .eq('id', requestId)
+      .eq('status', 'pending');
+
+    if (error) throw error;
+  },
+
+  async deletePasswordResetRequest(requestId: string): Promise<void> {
+    const { error } = await supabase
+      .from('password_reset_requests')
       .delete()
       .eq('id', requestId);
 

@@ -25,6 +25,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Shield, Users, Loader2, Activity, Monitor, RefreshCw } from 'lucide-react';
 import { format } from 'date-fns';
 import AccountRequests from '@/components/admin/AccountRequests';
+import PasswordResetRequests from '@/components/admin/PasswordResetRequests';
 
 export default function Admin() {
   const { profile } = useAuth();
@@ -210,6 +211,11 @@ export default function Admin() {
       {/* Account Requests Section */}
       <div className="mb-8">
         <AccountRequests />
+      </div>
+
+      {/* Password Reset Requests Section */}
+      <div className="mb-8">
+        <PasswordResetRequests />
       </div>
 
       <Card className="mb-8">

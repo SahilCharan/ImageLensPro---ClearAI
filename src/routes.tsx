@@ -1,5 +1,6 @@
 import Login from './pages/Login';
 import RequestAccount from './pages/RequestAccount';
+import ForgotPassword from './pages/ForgotPassword';
 import Dashboard from './pages/Dashboard';
 import Upload from './pages/Upload';
 import ImageAnalysis from './pages/ImageAnalysis';
@@ -30,6 +31,12 @@ const routes: RouteConfig[] = [
     name: 'Request Account',
     path: '/request-account',
     element: <RequestAccount />,
+    visible: false
+  },
+  {
+    name: 'Forgot Password',
+    path: '/forgot-password',
+    element: <ForgotPassword />,
     visible: false
   },
   {

@@ -1,6 +1,7 @@
 export type UserRole = 'user' | 'admin';
 export type ApprovalStatus = 'pending' | 'approved' | 'rejected';
 export type RequestStatus = 'pending' | 'approved' | 'rejected';
+export type PasswordResetStatus = 'pending' | 'approved' | 'rejected';
 
 export interface Profile {
   id: string;
@@ -25,6 +26,18 @@ export interface AccountRequest {
   approved_at: string | null;
   created_at: string;
   updated_at: string;
+}
+
+export interface PasswordResetRequest {
+  id: string;
+  user_id: string | null;
+  email: string;
+  status: PasswordResetStatus;
+  requested_at: string;
+  processed_at: string | null;
+  processed_by: string | null;
+  notes: string | null;
+  created_at: string;
 }
 
 export interface UserSession {
