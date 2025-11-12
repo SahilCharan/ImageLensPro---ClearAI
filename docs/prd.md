@@ -1,103 +1,94 @@
 # ClearAI Image Text Error Detection Application Requirements Document
 
-##1. Application Overview
+## 1. Application Overview
 ### 1.1 Application Name
 ClearAI 'Image Text Error Detection'\n
 ### 1.2 Application Description
-A clean, minimalist AI-powered web application for detecting and analyzing text errors in images. The platform provides streamlined image processing with tabular results display, hosted entirely on AWS infrastructure.
-
+A clean, minimalist AI-powered web application for detecting and analyzing text errors in images. The platform provides streamlined image processing with tabular results display, using n8n webhook automation and Supabase database for user management.\n
 ### 1.3 Core Functionality
 - Custom user authentication system with system-generated passwords
-- Administrator approval workflow for new accounts and password recovery (manual approval only)
-- Forgot password functionality with admin notification system
+- Administrator approval workflow via n8n webhook automation
+- Forgot password functionality with webhook-based email system
 - Image upload and processing (drag-and-drop + file button)
 - AI-powered text error detection and analysis
 - Clean tabular results display\n- Administrator dashboard for user management
 - Batch user account creation capability
 
-## 2. AWS Technical Architecture
-### 2.1 Recommended AWS Services Architecture
+## 2. Technical Architecture
+### 2.1 Backend Services Architecture
+**Database:**
+- Supabase: Primary database for user accounts, authentication data, and processing history
+- User table structure: email, system_generated_password, approval_status, created_at\n\n**Webhook Automation:**
+- n8n: Webhook automation platform for email workflows
+- Webhook endpoints for user registration and password recovery
+- Email sending automation with admin approval workflows
+
 **Frontend Hosting:**
-- Amazon S3: Static website hosting for React.js application
-- Amazon CloudFront: CDN for global content delivery and performance\n\n**Backend Services:**
-- AWS API Gateway: RESTful API endpoints management
-- AWS Lambda: Serverless functions for business logic
-- Amazon Cognito: Custom user pool management (without third-party providers)
-\n**Database & Storage:**
-- Amazon DynamoDB: User accounts, authentication data, and processing history
-- Amazon S3: Image file storage with lifecycle policies
+- Static website hosting for the web application
+- Image file storage and processing
+\n### 2.2 Supabase Database Configuration
+**Users Table Schema:**
+```sql
+CREATE TABLE users (\n  id SERIAL PRIMARY KEY,
+  email VARCHAR(255) UNIQUE NOT NULL,\n  system_generated_password VARCHAR(255) NOT NULL,
+  approval_status VARCHAR(50) DEFAULT 'pending',
+  created_at TIMESTAMP DEFAULT NOW(),
+  updated_at TIMESTAMP DEFAULT NOW()
+);
+```
 
-**Processing & AI:**
-- Amazon Textract: Text extraction from images
-- AWS Lambda: Custom error detection algorithms
-- Amazon SQS: Queue management for image processing jobs
+**Supabase Connection Details:**
+- Database URL: [To be provided by development team]
+- API Key: [To be configured during setup]
+- Service Role Key: [For backend operations]
 
-**Email Services:**
-- Amazon SES: Email notification service for administrator alerts and user communications
-- Amazon SNS: Simple notification service for real-time admin notifications
+### 2.3 n8n Webhook Workflows
+**User Registration Workflow:**
+1. Frontend sends POST request to n8n webhook with user email
+2. n8n receives email data and sends notification to administrators
+3. Admin receives email with approval/rejection options
+4. If approved: n8n generates password using JavaScript code and saves to Supabase
+5. n8n sends welcome email to user with system-generated password
 
-**Security & Monitoring:**
-- AWS IAM: Role-based access control\n- Amazon CloudWatch: Logging and monitoring
-- AWS WAF: Web application firewall protection
-
-### 2.2 Architecture Workflow
-**User Registration Flow:**
-1. User submits account request via frontend form
-2. API Gateway → Lambda function generates system password and stores request in DynamoDB
-3. Amazon SES sends email notification to administrators: Dmanopla91@gmail.com and sahilcharandwary@gmail.com
-4. Administrator reviews request in admin dashboard (manual approval only - no automatic approval)
-5. Admin approves/rejects via dashboard → updates DynamoDB user status
-6. Amazon SES sends confirmation email to user upon approval with system-generated password\n
-**Forgot Password Flow:**\n1. User enters email address on forgot password page
-2. System verifies email existence in DynamoDB user database
-3. If email not found: Display message'Email not found. Please create an account to use our features.'
-4. If email exists: Generate admin notification with Accept/Reject buttons
-5. Administrator receives email notification for password recovery request
-6. Admin clicks Accept → System sends user's existing system-generated password via email
-7. Admin clicks Reject → User receives rejection notification
-
-**Image Processing Flow:**
-1. User uploads image → S3 bucket storage
-2. Lambda function triggered → processes image with Textract\n3. Custom error detection algorithm analyzes extracted text
-4. Results stored in DynamoDB and returned to frontend
-5. Clean table display with ERROR, TYPE, DESCRIPTION, LOCATION columns
+**Password Recovery Workflow:**
+1. User requests password recovery via frontend
+2. Frontend sends POST request to n8n webhook with user email
+3. n8n verifies email exists in Supabase database
+4. If exists: n8n sends admin notification for password recovery approval
+5. If approved: n8n fetches existing password from Supabase and emails to user
+6. If rejected: n8n sends rejection notification to user
 
 ## 3. Authentication System
 ### 3.1 System-Generated Password Management
-- JavaScript function for automatic password generation (fixed, random passwords)
+- JavaScript function integrated in n8n workflow for password generation
 - Users cannot set or modify their own passwords
-- Same password used for initial login and password recovery\n- Secure password storage with encryption in DynamoDB
-\n### 3.2 Forgot Password Implementation
-- 'Forgot Password' link on login interface
-- Email verification against user database
-- Admin notification system with Accept/Reject functionality
-- Automated password dispatch upon admin approval
+- Passwords stored securely in Supabase database
+- Same password used for initial login and password recovery\n
+### 3.2 n8n Webhook Integration
+**Registration Webhook:**
+- Endpoint: [To be provided in next phase]
+- Method: POST
+- Payload: {'email': 'user@example.com' }
 
-### 3.3 Administrator Dashboard
-- Secure admin login with elevated privileges
-- Account request review and approval interface (manual approval required)
-- Password recovery request management with Accept/Reject buttons
-- Batch user account creation functionality\n- User management and monitoring tools
-- Processing history and analytics\n
-### 3.4 Administrator Email Configuration
+**Password Recovery Webhook:**
+- Endpoint: [To be provided in next phase]\n- Method: POST
+- Payload: { 'email': 'user@example.com', 'action': 'forgot_password' }\n
+### 3.3 Administrator Email Configuration
 **Primary Administrator Emails:**
-- Dmanopla91@gmail.com\n- sahilcharandwary@gmail.com (updated for sahil login account)
+- Dmanopla91@gmail.com\n- sahilcharandwary@gmail.com
 
-**Email Notification Types:**
-- New user registration requests
-- Password recovery requests with Accept/Reject buttons
+**Email Workflow via n8n:**\n- New user registration notifications
+- Password recovery approval requests
 - Account approval confirmations
-- System alerts and monitoring notifications
-- Processing error notifications
-
-## 4. User Interface Design
+- System alerts and notifications
+\n## 4. User Interface Design
 ### 4.1 Login & Registration Pages
 - Clean login form with username/password fields
 - 'Forgot Password' link with email verification interface
 - 'Create Account' link leading to registration form
 - Registration form for credential submission
-- Account pending approval status page with clear messaging about manual review process
-- Email not found error message display
+- Account pending approval status page
+- Email verification and status messages
 
 ### 4.2 Main Application Page
 **Image Input Section:**
@@ -106,7 +97,8 @@ A clean, minimalist AI-powered web application for detecting and analyzing text 
 - Support for common image formats (JPG, PNG, GIF)
 \n**Processing Control:**
 - Single, clear'Process' button to initiate analysis
-- Processing status indicators\n\n**Results Display:**
+- Processing status indicators
+\n**Results Display:**
 - Clean, well-structured table with columns:\n  - ERROR: Detected error text
   - TYPE: Error category (spelling, grammar, spacing, etc.)
   - DESCRIPTION: Detailed error explanation
@@ -116,88 +108,74 @@ A clean, minimalist AI-powered web application for detecting and analyzing text 
 
 ## 5. Design Style & Branding
 ### 5.1 Logo Integration
-- Incorporate provided logo file (image.png) into application header
+- Incorporate provided ClearAI logo (image.png) into application header
 - Color scheme coordination based on logo theme
 - Consistent branding across all pages
 
-### 5.2 Visual Design\n- Clean, minimalist aesthetic throughout
-- Color scheme: Coordinated with ClearAI logo (dark gray #4a5568, mint green #81e6d9, light blue #90cdf4)
+### 5.2 Visual Design
+- Clean, minimalist aesthetic throughout
+- Color scheme: Dark gray (#4a5568), mint green (#81e6d9), light blue (#90cdf4)
 - Modern card-based layout with subtle shadows
 - Rounded corners (6px radius) for contemporary feel
-- Clean typography with proper hierarchy\n- Minimal visual distractions to maintain focus on core functionality
+- Clean typography with proper hierarchy\n
+## 6. Workflow Implementation
+### 6.1 User Registration Flow
+1. User submits registration form with email
+2. Frontend sends POST request to n8n webhook
+3. n8n sends email notification to administrators
+4. Administrator reviews and approves/rejects via email
+5. If approved: n8n generates password and saves to Supabase
+6. n8n sends welcome email to user with login credentials
 
-### 5.3 Layout Structure
-- Responsive grid system for different screen sizes
-- Fixed container dimensions for consistent image display
-- Streamlined navigation with essential functions only
-- Table-based results layout with clear column headers
-\n## 6. Email System Configuration
-### 6.1 Amazon SES Setup
-- Configure SES for sending emails from verified domain
-- Set up email templates for user notifications and admin actions
-- Configure bounce and complaint handling
-- Implement email delivery tracking
-
-### 6.2 Administrator Notification System
-- Immediate email alerts to both administrator addresses upon new user registration
-- Password recovery request emails with Accept/Reject action buttons
-- Daily digest emails with pending approval summary
-- System health and error notifications
-- Processing volume and usage statistics
-
-### 6.3 User Communication
-- Welcome email upon account approval with system-generated password\n- Account rejection notification with reason
-- Password dispatch email upon admin approval of forgot password request
-- Email not found notification for invalid recovery attempts
-- Processing completion notifications
-
-### 6.4 Email Templates
-**Admin Password Recovery Notification:**
-- Subject: Password Recovery Request for [User Email]
-- Content: User [email] has requested password recovery
-- Action Buttons: 'Accept' and 'Reject' with direct links to admin dashboard
-\n**User Password Dispatch Email:**
-- Subject: Your ClearAI Account Password
-- Content: Your system-generated password for login access
-- Password: [System-Generated Password]
-
-## 7. Security & Scalability Considerations
-### 7.1 Security Measures
-- AWS WAF protection against common web attacks
-- IAM roles with least privilege access
-- Encrypted data storage in DynamoDB and S3
-- Secure JWT token implementation\n- Input validation and sanitization\n- Secure password generation and storage
-\n### 7.2 Scalability Features
-- Serverless Lambda functions for automatic scaling
-- CloudFront CDN for global performance
-- DynamoDB auto-scaling capabilities
-- S3 lifecycle policies for cost optimization\n- SQS queuing for handling processing load spikes
-\n## 8. Administrator Access & Code Oversight
-### 8.1 Source Code Access
-- Complete source code repository access for administrator
-- AWS CodeCommit or GitHub integration for version control
-- Documentation for customization and maintenance
-- Deployment scripts and infrastructure as code (CloudFormation/CDK)
-
-### 8.2 Monitoring & Analytics
-- CloudWatch dashboards for application performance\n- User activity tracking and processing statistics
-- Error logging and debugging capabilities
-- Cost monitoring and optimization recommendations\n\n## 9. Technical Implementation Specifications
-### 9.1 Password Generation Function
-```javascript\n// System password generation function
+### 6.2 Password Recovery Flow\n1. User enters email on forgot password page
+2. Frontend sends POST request to n8n webhook
+3. n8n checks if email exists in Supabase
+4. If exists: n8n sends admin approval request
+5. If approved: n8n fetches password from Supabase and emails to user
+6. If rejected: n8n sends rejection notification\n
+### 6.3 Password Generation Function
+```javascript\n// System password generation function for n8n
 function generateSystemPassword() {
-const charset = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*';
-    let password = '';
-    for (let i = 0; i < 12; i++) {
-        password += charset.charAt(Math.floor(Math.random() * charset.length));
-    }
-    return password;
-}\n```
-\n### 9.2 User Account Updates
-- Update sahil login account email to: sahilcharandwary@gmail.com
-- Maintain existing system-generated password for continuity
-- Update admin notification routing accordingly
+  const charset = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*';
+  let password = '';
+  for (let i = 0; i < 12; i++) {
+    password += charset.charAt(Math.floor(Math.random() * charset.length));
+  }\n  return password;\n}
+```\n
+## 7. Database Operations
+### 7.1 Supabase Integration
+- User account creation and management
+- Password storage and retrieval
+- Approval status tracking
+- Processing history storage
+
+### 7.2 Data Security
+- Encrypted password storage in Supabase
+- Secure API connections
+- Input validation and sanitization\n- Access control and authentication
+
+## 8. Administrator Dashboard
+### 8.1 User Management
+- View pending registration requests
+- Approve/reject user accounts
+- Manage password recovery requests
+- Monitor user activity and processing statistics
+
+### 8.2 System Monitoring
+- Processing volume tracking
+- Error logging and debugging
+- Performance monitoring
+- Usage analytics
+
+## 9. Next Phase Requirements
+### 9.1 Webhook Configuration
+- n8n webhook URLs to be provided\n- Webhook authentication setup
+- Testing and validation procedures
+\n### 9.2 Supabase Setup
+- Database credentials configuration
+- API key management
+- Connection string setup
+- Security policies implementation
 
 ## Reference Files
-1. Research Report: ./workspace/app-7dzvb2e20qgx/docs/report.md
-2. Logo File: image.png (ClearAI branding logo for integration)
+1. Logo File: image.png (ClearAI branding logo for integration)
