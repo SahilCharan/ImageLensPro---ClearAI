@@ -9,6 +9,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { LogOut, Shield, LayoutDashboard, Upload as UploadIcon, Home, User } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
+import Logo from '@/components/common/Logo';
 
 export default function Header() {
   const { user, profile, signOut } = useAuth();
@@ -32,7 +33,7 @@ export default function Header() {
     <header className="sticky top-0 z-50 w-full border-b border-border bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/60">
       <div className="container mx-auto flex h-16 items-center justify-between px-4">
         <Link to="/" className="flex items-center gap-3">
-          <img src="/clearai-logo.png" alt="ClearAI" className="h-10" />
+          <Logo className="h-10" />
         </Link>
 
         <nav className="flex items-center gap-4">

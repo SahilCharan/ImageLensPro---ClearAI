@@ -13,8 +13,6 @@ import Logo from '@/components/common/Logo';
 export default function RequestAccount() {
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
@@ -69,24 +67,6 @@ export default function RequestAccount() {
       return;
     }
 
-    if (password.length < 8) {
-      toast({
-        title: 'Error',
-        description: 'Password must be at least 8 characters long',
-        variant: 'destructive'
-      });
-      return;
-    }
-
-    if (password !== confirmPassword) {
-      toast({
-        title: 'Error',
-        description: 'Passwords do not match',
-        variant: 'destructive'
-      });
-      return;
-    }
-
     setLoading(true);
 
     try {
@@ -97,7 +77,6 @@ export default function RequestAccount() {
       const result = await accountRequestApi.createAccountRequest({
         full_name: fullName,
         email,
-        password,
         message: message.trim() || undefined
       });
 
@@ -239,32 +218,6 @@ export default function RequestAccount() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="password">Password *</Label>
-              <Input
-                id="password"
-                type="password"
-                placeholder="At least 8 characters"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                disabled={loading}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="confirmPassword">Confirm Password *</Label>
-              <Input
-                id="confirmPassword"
-                type="password"
-                placeholder="Re-enter your password"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                required
-                disabled={loading}
-              />
-            </div>
-
-            <div className="space-y-2">
               <Label htmlFor="message">Reason for Access (Optional)</Label>
               <Textarea
                 id="message"
@@ -276,6 +229,13 @@ export default function RequestAccount() {
               />
               <p className="text-xs text-muted-foreground">
                 Providing a reason helps us process your request faster
+              </p>
+            </div>
+
+            <div className="bg-blue-50 dark:bg-blue-950 p-4 rounded-lg border border-blue-200 dark:border-blue-800">
+              <p className="text-sm text-blue-800 dark:text-blue-200">
+                <strong>ℹ️ Note:</strong> Once your request is approved, you'll receive a system-generated password via email. 
+                You can change it later using the "Forgot Password" feature.
               </p>
             </div>
 
