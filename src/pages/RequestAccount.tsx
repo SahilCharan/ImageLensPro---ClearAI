@@ -85,7 +85,7 @@ export default function RequestAccount() {
       // Try to send email notification to admins
       try {
         console.log('Sending email notification to admins...');
-        await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/notify-admins`, {
+        const emailResponse = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/notify-admins`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -100,16 +100,24 @@ export default function RequestAccount() {
             }
           })
         });
-        console.log('Email notification sent successfully');
+        
+        const emailResult = await emailResponse.json();
+        console.log('Email notification response:', emailResult);
+        
+        if (emailResult.success) {
+          console.log('✅ Email notification sent successfully to admins');
+        } else {
+          console.warn('⚠️ Email notification failed:', emailResult.message);
+        }
       } catch (emailError) {
-        console.error('Failed to send email notification:', emailError);
+        console.error('❌ Failed to send email notification:', emailError);
         // Don't fail the whole request if email fails
       }
 
       setSubmitted(true);
       toast({
-        title: 'Request Submitted',
-        description: 'Your account request has been submitted successfully. Admins will be notified via email.',
+        title: '✅ Request Submitted Successfully',
+        description: 'Your account request has been submitted. Admins have been notified and will review your request. You will receive an email with your password once approved.',
       });
     } catch (error) {
       console.error('Account request error:', error);
@@ -146,31 +154,64 @@ export default function RequestAccount() {
   if (submitted) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background p-4">
-        <Card className="w-full max-w-md">
+        <Card className="w-full max-w-2xl">
           <CardHeader className="text-center">
             <div className="flex justify-center mb-4">
-              <CheckCircle2 className="h-16 w-16 text-accent" />
+              <CheckCircle2 className="h-16 w-16 text-green-600" />
             </div>
-            <CardTitle className="text-2xl">Request Submitted</CardTitle>
+            <CardTitle className="text-2xl">✅ Request Submitted Successfully!</CardTitle>
             <CardDescription>
-              Your account request has been submitted successfully
+              Your account request has been received and admins have been notified
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="text-center space-y-2">
-              <p className="text-sm text-muted-foreground">
-                An administrator will review your request and notify you via email once your account is approved.
-              </p>
-              <p className="text-sm text-muted-foreground">
-                This usually takes 1-2 business days.
+          <CardContent className="space-y-6">
+            <div className="bg-blue-50 dark:bg-blue-950 p-4 rounded-lg border border-blue-200 dark:border-blue-800">
+              <h3 className="font-semibold text-blue-900 dark:text-blue-100 mb-2">📧 What Happens Next?</h3>
+              <ol className="text-sm text-blue-800 dark:text-blue-200 space-y-2 list-decimal list-inside">
+                <li>Our administrators have received an email notification about your request</li>
+                <li>They will review your information in the Admin Dashboard</li>
+                <li>Once approved, you'll receive an email with your login password</li>
+                <li>You can then log in and start using ClearAI</li>
+              </ol>
+            </div>
+
+            <div className="bg-yellow-50 dark:bg-yellow-950 p-4 rounded-lg border border-yellow-200 dark:border-yellow-800">
+              <h3 className="font-semibold text-yellow-900 dark:text-yellow-100 mb-2">⏱️ Timeline</h3>
+              <p className="text-sm text-yellow-800 dark:text-yellow-200">
+                Account requests are typically reviewed within <strong>1-2 business days</strong>. 
+                Please check your email (including spam folder) for updates.
               </p>
             </div>
-            <Button
-              onClick={() => navigate('/login')}
-              className="w-full"
-            >
-              Return to Login
-            </Button>
+
+            <div className="bg-green-50 dark:bg-green-950 p-4 rounded-lg border border-green-200 dark:border-green-800">
+              <h3 className="font-semibold text-green-900 dark:text-green-100 mb-2">🔐 Your Password</h3>
+              <p className="text-sm text-green-800 dark:text-green-200">
+                A secure password will be automatically generated and sent to your email once approved. 
+                You can change it later using the "Forgot Password" feature.
+              </p>
+            </div>
+
+            <div className="flex gap-3">
+              <Button
+                onClick={() => navigate('/login')}
+                className="flex-1"
+                variant="default"
+              >
+                Return to Login
+              </Button>
+              <Button
+                onClick={() => {
+                  setSubmitted(false);
+                  setFullName('');
+                  setEmail('');
+                  setMessage('');
+                }}
+                className="flex-1"
+                variant="outline"
+              >
+                Submit Another Request
+              </Button>
+            </div>
           </CardContent>
         </Card>
       </div>
