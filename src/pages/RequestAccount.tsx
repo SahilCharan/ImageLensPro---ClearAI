@@ -82,36 +82,36 @@ export default function RequestAccount() {
 
       console.log('Account request created successfully:', result);
 
-      // Try to send email notification to admins
+      // Send to n8n webhook for processing
       try {
-        console.log('Sending email notification to admins...');
-        const emailResponse = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/notify-admins`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`
-          },
-          body: JSON.stringify({
-            type: 'new_account_request',
-            data: {
+        console.log('Sending to n8n webhook...');
+        const webhookUrl = import.meta.env.VITE_N8N_ACCOUNT_REQUEST_WEBHOOK;
+        
+        if (!webhookUrl) {
+          console.warn('⚠️ N8N webhook URL not configured');
+        } else {
+          const webhookResponse = await fetch(webhookUrl, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
               full_name: fullName,
               email,
-              message: message.trim() || 'No message provided'
-            }
-          })
-        });
-        
-        const emailResult = await emailResponse.json();
-        console.log('Email notification response:', emailResult);
-        
-        if (emailResult.success) {
-          console.log('✅ Email notification sent successfully to admins');
-        } else {
-          console.warn('⚠️ Email notification failed:', emailResult.message);
+              message: message.trim() || 'No message provided',
+              request_id: result.id
+            })
+          });
+          
+          if (webhookResponse.ok) {
+            console.log('✅ N8N webhook triggered successfully');
+          } else {
+            console.warn('⚠️ N8N webhook failed:', await webhookResponse.text());
+          }
         }
-      } catch (emailError) {
-        console.error('❌ Failed to send email notification:', emailError);
-        // Don't fail the whole request if email fails
+      } catch (webhookError) {
+        console.error('❌ Failed to trigger n8n webhook:', webhookError);
+        // Don't fail the whole request if webhook fails
       }
 
       setSubmitted(true);

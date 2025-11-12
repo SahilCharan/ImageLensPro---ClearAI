@@ -41,18 +41,27 @@ export default function ForgotPassword() {
       // Create password reset request
       await passwordResetApi.createPasswordResetRequest(email, user.id);
 
-      // Send notification to admins via Edge Function
+      // Send to n8n webhook for processing
       try {
-        await supabase.functions.invoke('notify-password-reset', {
-          body: {
-            email,
-            userName: user.full_name || 'User',
-            userId: user.id
-          }
-        });
-      } catch (emailError) {
-        console.error('Failed to send admin notification:', emailError);
-        // Don't fail the request if email fails
+        const webhookUrl = import.meta.env.VITE_N8N_PASSWORD_RESET_WEBHOOK;
+        
+        if (webhookUrl) {
+          await fetch(webhookUrl, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              email,
+              full_name: user.full_name || 'User',
+              user_id: user.id
+            })
+          });
+          console.log('✅ N8N webhook triggered for password reset');
+        }
+      } catch (webhookError) {
+        console.error('Failed to trigger n8n webhook:', webhookError);
+        // Don't fail the request if webhook fails
       }
 
       setStatus('success');
