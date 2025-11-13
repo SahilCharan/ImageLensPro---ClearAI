@@ -157,6 +157,9 @@ VITE_N8N_PASSWORD_RESET_WEBHOOK=https://...
 
 None currently. Application is stable and ready for N8N integration.
 
+### Recently Fixed ✅
+- **Storage Bucket NULL Error** - Fixed `auto_create_user_on_approval()` trigger function that was failing when creating users. The function now correctly inserts into `auth.users` with only existing fields and proper constraints. (Migration: `17_fix_auto_create_user_trigger.sql`)
+
 ## 📞 Support
 
 For issues or questions, check the Supabase dashboard logs:
