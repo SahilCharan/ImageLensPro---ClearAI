@@ -441,16 +441,16 @@ export default function ImageAnalysis() {
                     <span>No errors found</span>
                   </div>
                 ) : (
-                  <div className="rounded-md border overflow-hidden">
+                  <div className="rounded-md border overflow-x-auto">
                     <Table>
                       <TableHeader>
                         <TableRow>
-                          <TableHead className="w-12">#</TableHead>
-                          <TableHead className="w-24">Type</TableHead>
-                          <TableHead className="w-[20%]">Original Text</TableHead>
-                          <TableHead className="w-[20%]">Suggested Correction</TableHead>
-                          <TableHead className="w-[30%]">Description</TableHead>
-                          <TableHead className="w-[10%]">Location</TableHead>
+                          <TableHead className="w-16">#</TableHead>
+                          <TableHead className="min-w-[120px]">Type</TableHead>
+                          <TableHead className="min-w-[250px]">Original Text</TableHead>
+                          <TableHead className="min-w-[250px]">Suggested Correction</TableHead>
+                          <TableHead className="min-w-[300px]">Description</TableHead>
+                          <TableHead className="min-w-[150px]">Location</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -461,8 +461,8 @@ export default function ImageAnalysis() {
                             onMouseEnter={() => setHoveredError(error.id)}
                             onMouseLeave={() => setHoveredError(null)}
                           >
-                            <TableCell className="font-medium align-top">{index + 1}</TableCell>
-                            <TableCell className="align-top">
+                            <TableCell className="font-medium">{index + 1}</TableCell>
+                            <TableCell>
                               <Badge
                                 variant="outline"
                                 className="border-2 whitespace-nowrap"
@@ -474,16 +474,16 @@ export default function ImageAnalysis() {
                                 {ERROR_LABELS[error.error_type]}
                               </Badge>
                             </TableCell>
-                            <TableCell className="font-medium break-words align-top">
+                            <TableCell className="font-medium whitespace-nowrap">
                               {error.original_text || '-'}
                             </TableCell>
-                            <TableCell className="text-[hsl(var(--error-suggestions))] font-medium break-words align-top">
+                            <TableCell className="text-[hsl(var(--error-suggestions))] font-medium whitespace-nowrap">
                               {error.suggested_correction || '-'}
                             </TableCell>
-                            <TableCell className="text-sm text-muted-foreground break-words align-top">
+                            <TableCell className="text-sm text-muted-foreground">
                               {error.description || '-'}
                             </TableCell>
-                            <TableCell className="text-xs text-muted-foreground font-mono break-words align-top">
+                            <TableCell className="text-xs text-muted-foreground font-mono whitespace-nowrap">
                               x:{Math.round(Number(error.x_coordinate))}, y:{Math.round(Number(error.y_coordinate))}
                               {error.width && error.height && (
                                 <><br/>w:{Math.round(Number(error.width))}, h:{Math.round(Number(error.height))}</>
