@@ -263,240 +263,242 @@ export default function ImageAnalysis() {
         </Button>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2">
-          <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle>{imageData.filename}</CardTitle>
-                  <CardDescription>
-                    {imageData.status === 'completed' && imageData.errors?.length
-                      ? `${imageData.errors.length} error${imageData.errors.length !== 1 ? 's' : ''} detected`
-                      : 'No errors detected'}
-                  </CardDescription>
-                </div>
-                <div className="flex gap-2">
-                  {imageData.errors && imageData.errors.length > 0 && (
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      onClick={() => setShowBoxes(!showBoxes)}
-                    >
-                      {showBoxes ? 'Hide Boxes' : 'Show Boxes'}
-                    </Button>
-                  )}
-                  {(imageData.status === 'pending' || imageData.status === 'processing') && (
-                    <Button onClick={loadImageData}>
-                      <RefreshCw className="mr-2 h-4 w-4" />
-                      Refresh Status
-                    </Button>
-                  )}
-                </div>
+      <div className="flex flex-col gap-6">
+        {/* Image Section */}
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle>{imageData.filename}</CardTitle>
+                <CardDescription>
+                  {imageData.status === 'completed' && imageData.errors?.length
+                    ? `${imageData.errors.length} error${imageData.errors.length !== 1 ? 's' : ''} detected`
+                    : 'No errors detected'}
+                </CardDescription>
               </div>
-            </CardHeader>
-            <CardContent>
-              <div
-                ref={containerRef}
-                className="relative bg-card rounded-lg overflow-hidden border-2 border-border"
-                style={{ minHeight: '400px' }}
-              >
-                <img
-                  ref={imageRef}
-                  src={imageData.original_url}
-                  alt={imageData.filename}
-                  className="w-full h-auto"
-                  onLoad={handleImageLoad}
-                />
+              <div className="flex gap-2">
+                {imageData.errors && imageData.errors.length > 0 && (
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => setShowBoxes(!showBoxes)}
+                  >
+                    {showBoxes ? 'Hide Boxes' : 'Show Boxes'}
+                  </Button>
+                )}
+                {(imageData.status === 'pending' || imageData.status === 'processing') && (
+                  <Button onClick={loadImageData}>
+                    <RefreshCw className="mr-2 h-4 w-4" />
+                    Refresh Status
+                  </Button>
+                )}
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div
+              ref={containerRef}
+              className="relative bg-card rounded-lg overflow-hidden border-2 border-border"
+              style={{ minHeight: '400px' }}
+            >
+              <img
+                ref={imageRef}
+                src={imageData.original_url}
+                alt={imageData.filename}
+                className="w-full h-auto"
+                onLoad={handleImageLoad}
+              />
+              
+              {showBoxes && imageData.errors?.map((error) => {
+                const position = getErrorPosition(error);
                 
-                {showBoxes && imageData.errors?.map((error) => {
-                  const position = getErrorPosition(error);
-                  
-                  // Don't render if not visible or dimensions not ready
-                  if (!position.visible || position.width === 0 || position.height === 0) {
-                    return null;
-                  }
-                  
-                  const isHovered = hoveredError === error.id;
-                  
-                  // Normalize error type to lowercase for color lookup
-                  const errorTypeKey = error.error_type.toLowerCase();
-                  const errorColor = ERROR_COLORS[errorTypeKey] || ERROR_COLORS.spelling;
-                  const errorLabel = ERROR_LABELS[errorTypeKey] || error.error_type;
-                  
-                  // Calculate tooltip position (below by default, above if would overflow)
-                  const tooltipTop = position.height + 8;
-                  const wouldOverflowBottom = position.top + position.height + 200 > imageDimensions.height;
-                  const tooltipStyle = wouldOverflowBottom 
-                    ? { bottom: `${position.height + 8}px` }
-                    : { top: `${tooltipTop}px` };
-                  
-                  return (
+                // Don't render if not visible or dimensions not ready
+                if (!position.visible || position.width === 0 || position.height === 0) {
+                  return null;
+                }
+                
+                const isHovered = hoveredError === error.id;
+                
+                // Normalize error type to lowercase for color lookup
+                const errorTypeKey = error.error_type.toLowerCase();
+                const errorColor = ERROR_COLORS[errorTypeKey] || ERROR_COLORS.spelling;
+                const errorLabel = ERROR_LABELS[errorTypeKey] || error.error_type;
+                
+                // Calculate tooltip position (below by default, above if would overflow)
+                const tooltipTop = position.height + 8;
+                const wouldOverflowBottom = position.top + position.height + 200 > imageDimensions.height;
+                const tooltipStyle = wouldOverflowBottom 
+                  ? { bottom: `${position.height + 8}px` }
+                  : { top: `${tooltipTop}px` };
+                
+                return (
+                  <div
+                    key={error.id}
+                    className="absolute cursor-pointer transition-all"
+                    style={{
+                      left: `${position.left}px`,
+                      top: `${position.top}px`,
+                      width: `${position.width}px`,
+                      height: `${position.height}px`,
+                      zIndex: isHovered ? 10 : 1
+                    }}
+                    onMouseEnter={() => setHoveredError(error.id)}
+                    onMouseLeave={() => setHoveredError(null)}
+                  >
                     <div
-                      key={error.id}
-                      className="absolute cursor-pointer transition-all"
+                      className="w-full h-full border-2 rounded"
                       style={{
-                        left: `${position.left}px`,
-                        top: `${position.top}px`,
-                        width: `${position.width}px`,
-                        height: `${position.height}px`,
-                        zIndex: isHovered ? 10 : 1
+                        borderColor: errorColor,
+                        backgroundColor: isHovered 
+                          ? `${errorColor}40` 
+                          : `${errorColor}20`,
+                        boxShadow: isHovered 
+                          ? `0 0 20px ${errorColor}` 
+                          : `0 2px 4px rgba(0,0,0,0.2)`
                       }}
-                      onMouseEnter={() => setHoveredError(error.id)}
-                      onMouseLeave={() => setHoveredError(null)}
-                    >
+                    />
+                    
+                    {isHovered && (
                       <div
-                        className="w-full h-full border-2 rounded"
-                        style={{
-                          borderColor: errorColor,
-                          backgroundColor: isHovered 
-                            ? `${errorColor}40` 
-                            : `${errorColor}20`,
-                          boxShadow: isHovered 
-                            ? `0 0 20px ${errorColor}` 
-                            : `0 2px 4px rgba(0,0,0,0.2)`
+                        className="absolute left-0 bg-popover text-popover-foreground p-3 rounded-lg shadow-xl border border-border min-w-64 z-20"
+                        style={{ 
+                          pointerEvents: 'none',
+                          ...tooltipStyle
                         }}
-                      />
-                      
-                      {isHovered && (
-                        <div
-                          className="absolute left-0 bg-popover text-popover-foreground p-3 rounded-lg shadow-xl border border-border min-w-64 z-20"
-                          style={{ 
-                            pointerEvents: 'none',
-                            ...tooltipStyle
-                          }}
-                        >
-                          <div className="flex items-center gap-2 mb-2">
-                            <div
-                              className="w-3 h-3 rounded-full"
-                              style={{ backgroundColor: errorColor }}
-                            />
-                            <span className="font-semibold text-sm">
-                              {errorLabel}
-                            </span>
-                          </div>
-                          {error.original_text && (
-                            <p className="text-sm mb-1">
-                              <span className="text-muted-foreground">Original:</span>{' '}
-                              <span className="font-medium">{error.original_text}</span>
-                            </p>
-                          )}
-                          {error.suggested_correction && (
-                            <p className="text-sm mb-1">
-                              <span className="text-muted-foreground">Suggestion:</span>{' '}
-                              <span className="font-medium text-[hsl(var(--error-suggestions))]">
-                                {error.suggested_correction}
-                              </span>
-                            </p>
-                          )}
-                          {error.description && (
-                            <p className="text-xs text-muted-foreground mt-2">
-                              {error.description}
-                            </p>
-                          )}
+                      >
+                        <div className="flex items-center gap-2 mb-2">
+                          <div
+                            className="w-3 h-3 rounded-full"
+                            style={{ backgroundColor: errorColor }}
+                          />
+                          <span className="font-semibold text-sm">
+                            {errorLabel}
+                          </span>
                         </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+                        {error.original_text && (
+                          <p className="text-sm mb-1">
+                            <span className="text-muted-foreground">Original:</span>{' '}
+                            <span className="font-medium">{error.original_text}</span>
+                          </p>
+                        )}
+                        {error.suggested_correction && (
+                          <p className="text-sm mb-1">
+                            <span className="text-muted-foreground">Suggestion:</span>{' '}
+                            <span className="font-medium text-[hsl(var(--error-suggestions))]">
+                              {error.suggested_correction}
+                            </span>
+                          </p>
+                        )}
+                        {error.description && (
+                          <p className="text-xs text-muted-foreground mt-2">
+                            {error.description}
+                          </p>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
 
-        <div className="lg:col-span-1">
-          <Card>
-            <CardHeader>
-              <CardTitle>Error Summary</CardTitle>
-              <CardDescription>
-                Hover over markers to see details
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {imageData.status === 'pending' && (
-                <div className="flex items-center gap-2 text-muted-foreground">
-                  <AlertCircle className="h-5 w-5" />
-                  <span>Analysis not started</span>
-                </div>
-              )}
-              
-              {imageData.status === 'processing' && (
-                <div className="flex items-center gap-2 text-primary">
-                  <Loader2 className="h-5 w-5 animate-spin" />
-                  <span>Analyzing image...</span>
-                </div>
-              )}
-              
-              {imageData.status === 'failed' && (
-                <div className="flex items-center gap-2 text-destructive">
-                  <AlertCircle className="h-5 w-5" />
-                  <span>Analysis failed</span>
-                </div>
-              )}
-              
-              {imageData.status === 'completed' && (
-                <>
-                  {!imageData.errors?.length ? (
-                    <div className="flex items-center gap-2 text-[hsl(var(--error-suggestions))]">
-                      <CheckCircle2 className="h-5 w-5" />
-                      <span>No errors found</span>
-                    </div>
-                  ) : (
-                    <ScrollArea className="h-[500px]">
-                      <Table>
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead className="w-16">ID</TableHead>
-                            <TableHead>Type</TableHead>
-                            <TableHead>Original Text</TableHead>
-                            <TableHead>Correction</TableHead>
-                            <TableHead>Location</TableHead>
+        {/* Error Table Section - Full Width Below Image */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Error Details</CardTitle>
+            <CardDescription>
+              Hover over rows to highlight errors on the image
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {imageData.status === 'pending' && (
+              <div className="flex items-center gap-2 text-muted-foreground">
+                <AlertCircle className="h-5 w-5" />
+                <span>Analysis not started</span>
+              </div>
+            )}
+            
+            {imageData.status === 'processing' && (
+              <div className="flex items-center gap-2 text-primary">
+                <Loader2 className="h-5 w-5 animate-spin" />
+                <span>Analyzing image...</span>
+              </div>
+            )}
+            
+            {imageData.status === 'failed' && (
+              <div className="flex items-center gap-2 text-destructive">
+                <AlertCircle className="h-5 w-5" />
+                <span>Analysis failed</span>
+              </div>
+            )}
+            
+            {imageData.status === 'completed' && (
+              <>
+                {!imageData.errors?.length ? (
+                  <div className="flex items-center gap-2 text-[hsl(var(--error-suggestions))]">
+                    <CheckCircle2 className="h-5 w-5" />
+                    <span>No errors found</span>
+                  </div>
+                ) : (
+                  <div className="rounded-md border">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead className="w-16">#</TableHead>
+                          <TableHead className="w-32">Type</TableHead>
+                          <TableHead className="min-w-[200px]">Original Text</TableHead>
+                          <TableHead className="min-w-[200px]">Suggested Correction</TableHead>
+                          <TableHead className="min-w-[250px]">Description</TableHead>
+                          <TableHead className="w-32">Location</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {imageData.errors.map((error, index) => (
+                          <TableRow
+                            key={error.id}
+                            className="cursor-pointer hover:bg-accent transition-colors"
+                            onMouseEnter={() => setHoveredError(error.id)}
+                            onMouseLeave={() => setHoveredError(null)}
+                          >
+                            <TableCell className="font-medium">{index + 1}</TableCell>
+                            <TableCell>
+                              <Badge
+                                variant="outline"
+                                className="border-2"
+                                style={{
+                                  borderColor: ERROR_COLORS[error.error_type],
+                                  color: ERROR_COLORS[error.error_type]
+                                }}
+                              >
+                                {ERROR_LABELS[error.error_type]}
+                              </Badge>
+                            </TableCell>
+                            <TableCell className="font-medium">
+                              {error.original_text || '-'}
+                            </TableCell>
+                            <TableCell className="text-[hsl(var(--error-suggestions))] font-medium">
+                              {error.suggested_correction || '-'}
+                            </TableCell>
+                            <TableCell className="text-sm text-muted-foreground">
+                              {error.description || '-'}
+                            </TableCell>
+                            <TableCell className="text-xs text-muted-foreground font-mono">
+                              x:{Math.round(Number(error.x_coordinate))}, y:{Math.round(Number(error.y_coordinate))}
+                              {error.width && error.height && (
+                                <><br/>w:{Math.round(Number(error.width))}, h:{Math.round(Number(error.height))}</>
+                              )}
+                            </TableCell>
                           </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {imageData.errors.map((error, index) => (
-                            <TableRow
-                              key={error.id}
-                              className="cursor-pointer hover:bg-accent transition-colors"
-                              onMouseEnter={() => setHoveredError(error.id)}
-                              onMouseLeave={() => setHoveredError(null)}
-                            >
-                              <TableCell className="font-medium">{index + 1}</TableCell>
-                              <TableCell>
-                                <Badge
-                                  variant="outline"
-                                  className="border-2"
-                                  style={{
-                                    borderColor: ERROR_COLORS[error.error_type],
-                                    color: ERROR_COLORS[error.error_type]
-                                  }}
-                                >
-                                  {ERROR_LABELS[error.error_type]}
-                                </Badge>
-                              </TableCell>
-                              <TableCell className="max-w-xs truncate">
-                                {error.original_text || '-'}
-                              </TableCell>
-                              <TableCell className="max-w-xs truncate text-[hsl(var(--error-suggestions))] font-medium">
-                                {error.suggested_correction || '-'}
-                              </TableCell>
-                              <TableCell className="text-xs text-muted-foreground font-mono">
-                                x:{Math.round(Number(error.x_coordinate))}, y:{Math.round(Number(error.y_coordinate))}
-                                {error.width && error.height && (
-                                  <><br/>w:{Math.round(Number(error.width))}, h:{Math.round(Number(error.height))}</>
-                                )}
-                              </TableCell>
-                            </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
-                    </ScrollArea>
-                  )}
-                </>
-              )}
-            </CardContent>
-          </Card>
-        </div>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                )}
+              </>
+            )}
+          </CardContent>
+        </Card>
       </div>
     </div>
   );
