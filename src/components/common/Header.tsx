@@ -149,6 +149,16 @@ export default function Header() {
                   </div>
                 </PopoverContent>
               </Popover>
+
+              {/* Logout Button - Easy Access */}
+              <Button 
+                variant="destructive" 
+                onClick={handleSignOut}
+                className="gap-2"
+              >
+                <LogOut className="h-4 w-4" />
+                Logout
+              </Button>
             </>
           ) : (
             <Link to="/login">
