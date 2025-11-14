@@ -8,6 +8,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Loader2, Mail, CheckCircle2, XCircle, ArrowLeft } from 'lucide-react';
 import { passwordResetApi } from '@/db/api';
 import { supabase } from '@/db/supabase';
+import Logo from '@/components/common/Logo';
 
 export default function ForgotPassword() {
   const [email, setEmail] = useState('');
@@ -77,8 +78,11 @@ export default function ForgotPassword() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
       <Card className="w-full max-w-md">
-        <CardHeader className="space-y-1">
-          <div className="flex items-center gap-2 mb-2">
+        <CardHeader className="space-y-4">
+          <div className="flex justify-center">
+            <Logo className="h-12" />
+          </div>
+          <div className="flex items-center gap-2">
             <Link to="/login">
               <Button variant="ghost" size="sm">
                 <ArrowLeft className="h-4 w-4 mr-1" />
@@ -86,10 +90,12 @@ export default function ForgotPassword() {
               </Button>
             </Link>
           </div>
-          <CardTitle className="text-2xl font-bold">Forgot Password</CardTitle>
-          <CardDescription>
-            Enter your email address and we'll send a password reset request to the administrator
-          </CardDescription>
+          <div>
+            <CardTitle className="text-2xl font-bold">Forgot Password</CardTitle>
+            <CardDescription>
+              Enter your email address and we'll send a password reset request to the administrator
+            </CardDescription>
+          </div>
         </CardHeader>
         <CardContent>
           {status === 'success' && (

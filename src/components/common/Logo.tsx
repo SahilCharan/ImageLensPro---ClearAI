@@ -21,8 +21,8 @@ export default function Logo({ className = 'h-12' }: LogoProps) {
 
   return (
     <img
-      src="/clearai-logo.png"
-      alt="ClearAI"
+      src="/images/clearai-logo.png"
+      alt="ClearAI - AI Business Solutions"
       className={className}
       onError={() => setImageError(true)}
       loading="eager"
