@@ -86,4 +86,24 @@ All colors MUST be HSL.
   body {
     @apply bg-background text-foreground;
   }
+
+  /* Table text wrapping styles */
+  table {
+    table-layout: fixed;
+    width: 100%;
+  }
+
+  table td {
+    word-wrap: break-word;
+    word-break: break-word;
+    overflow-wrap: break-word;
+    white-space: normal;
+  }
+
+  table th {
+    word-wrap: break-word;
+    word-break: break-word;
+    overflow-wrap: break-word;
+    white-space: normal;
+  }
 }
