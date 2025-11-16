@@ -1,8 +1,15 @@
+
 # 🖼️ ImageLens Pro - ClearAI
 
 **ImageLens Pro** is an intelligent, web-based platform designed for the automated detection and correction of errors within images. Leveraging powerful AI, it identifies various issues—from spelling and grammar to contextual mistakes—and presents them in a clear, interactive, and user-friendly interface.
 
 This platform is ideal for quality assurance in content creation, ensuring that visual materials are polished and error-free before publication.
+
+---
+
+### 🌐 Live Demo
+
+**[https://app-7dzvb2e20qgx.appmedo.com](https://app-7dzvb2e20qgx.appmedo.com)**
 
 ---
 
