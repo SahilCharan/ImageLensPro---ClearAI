@@ -11,6 +11,21 @@ This platform is ideal for quality assurance in content creation, ensuring that 
 **[https://app-7dzvb2e20qgx.appmedo.com](https://app-7dzvb2e20qgx.appmedo.com)**
 
 ---
+### Login Page
+<img width="478" height="494" alt="image" src="https://github.com/user-attachments/assets/0b749c26-2d57-4172-bff5-17cacce16161" />
+
+
+
+### SignUp Page
+<img width="454" height="610" alt="image" src="https://github.com/user-attachments/assets/0c75d624-c33f-4b7d-8338-7788361c8026" />
+
+
+### After SignIN - User Facing
+<img width="1363" height="633" alt="image" src="https://github.com/user-attachments/assets/f330cd73-9e67-4db8-8ba2-7860d35742eb" />
+
+
+
+
 
 ## Key Features
 
